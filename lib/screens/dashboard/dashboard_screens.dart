@@ -1,5 +1,6 @@
 import 'package:batik_sesa_bojonegoro_app/core/routes/app_routes.dart';
 import 'package:batik_sesa_bojonegoro_app/screens/dashboard/add_penerimaan_screens.dart';
+import 'package:batik_sesa_bojonegoro_app/screens/dashboard/edit_penerimaan_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:heroicons/heroicons.dart';
@@ -58,7 +59,7 @@ class DashboardScreen extends ConsumerWidget {
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 24,
-            color: Colors.black87,
+            color: Colors.blueAccent,
           ),
         ),
         centerTitle: true,
@@ -436,88 +437,272 @@ class DashboardScreen extends ConsumerWidget {
   ) {
     final dateFormat = DateFormat('dd MMM yyyy');
     final currencyFormat = NumberFormat('#,###');
-    final isToday = penerimaan['tanggal'].day == DateTime.now().day;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Colors.blue.shade50,
-            borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.08),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
           ),
-          child: HeroIcon(HeroIcons.shoppingBag, size: 20, color: Colors.blue),
-        ),
-        title: Text(
-          penerimaan['transaksi'],
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(
-              penerimaan['pembeli'],
-              style: TextStyle(fontSize: 12, color: Colors.black54),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Text(
-                  dateFormat.format(penerimaan['tanggal']),
-                  style: TextStyle(fontSize: 12, color: Colors.black54),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header: Icon dan Judul + Menu
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                if (isToday) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade50,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      'Hari Ini',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.green.shade800,
-                        fontWeight: FontWeight.bold,
+                child: const HeroIcon(
+                  HeroIcons.shoppingBag,
+                  size: 20,
+                  color: Colors.blue,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      penerimaan['transaksi'],
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      penerimaan['pembeli'],
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuButton(
+                icon: const Icon(Icons.more_vert, color: Colors.black54),
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'detail',
+                    child: Row(
+                      children: const [
+                        HeroIcon(HeroIcons.eye, size: 18),
+                        SizedBox(width: 8),
+                        Text('Detail'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: const [
+                        HeroIcon(HeroIcons.pencil, size: 18),
+                        SizedBox(width: 8),
+                        Text('Edit'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: const [
+                        HeroIcon(HeroIcons.trash, size: 18, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('Hapus', style: TextStyle(color: Colors.red)),
+                      ],
                     ),
                   ),
                 ],
-              ],
-            ),
-          ],
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              'Rp ${currencyFormat.format(penerimaan['total'])}',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                color: Colors.black87,
+                onSelected: (value) {
+                  if (value == 'detail') {
+                    _showDetailBottomSheet(context, penerimaan);
+                  } else if (value == 'edit') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            EditPenerimaanScreen(penerimaan: penerimaan),
+                      ),
+                    );
+                  } else if (value == 'delete') {
+                    _showDeleteConfirmation(context, penerimaan);
+                  }
+                },
               ),
+            ],
+          ),
+
+          const SizedBox(height: 5),
+          const Divider(height: 1, color: Colors.grey, thickness: 0.3),
+          const SizedBox(height: 5),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Rp ${currencyFormat.format(penerimaan['harga'])}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+              Text(
+                '${penerimaan['quantity']} ${penerimaan['satuan']}',
+                style: const TextStyle(fontSize: 13, color: Colors.black54),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          // Tanggal
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Total: Rp ${currencyFormat.format(penerimaan['total'])}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+              Text(
+                dateFormat.format(penerimaan['tanggal']),
+                style: const TextStyle(fontSize: 12, color: Colors.black45),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDetailBottomSheet(
+    BuildContext context,
+    Map<String, dynamic> penerimaan,
+  ) {
+    final dateFormat = DateFormat('dd MMMM yyyy');
+    final currencyFormat = NumberFormat('#,###');
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Detail Penerimaan',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+              _buildDetailRow(
+                'Tanggal',
+                dateFormat.format(penerimaan['tanggal']),
+              ),
+              _buildDetailRow('Transaksi', penerimaan['transaksi']),
+              _buildDetailRow('Pembeli', penerimaan['pembeli']),
+              _buildDetailRow(
+                'Quantity',
+                '${penerimaan['quantity']} ${penerimaan['satuan']}',
+              ),
+              _buildDetailRow(
+                'Harga Satuan',
+                'Rp ${currencyFormat.format(penerimaan['harga'])}',
+              ),
+              const Divider(height: 30),
+              _buildDetailRow(
+                'Total',
+                'Rp ${currencyFormat.format(penerimaan['total'])}',
+                isTotal: true,
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value, {bool isTotal = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: isTotal ? 16 : 14,
+              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+              color: isTotal ? Colors.blue : Colors.black,
             ),
-            const SizedBox(height: 4),
-            Text(
-              '${penerimaan['quantity']} ${penerimaan['satuan']}',
-              style: TextStyle(fontSize: 12, color: Colors.black54),
-            ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(
+    BuildContext context,
+    Map<String, dynamic> penerimaan,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Konfirmasi Hapus'),
+        content: Text(
+          'Apakah Anda yakin ingin menghapus penerimaan ${penerimaan['transaksi']}?',
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () {
+              // Add your delete logic here
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Penerimaan ${penerimaan['transaksi']} dihapus',
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            },
+            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }
