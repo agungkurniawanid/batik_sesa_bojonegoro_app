@@ -1,4 +1,5 @@
 import 'package:batik_sesa_bojonegoro_app/core/routes/app_routes.dart';
+import 'package:batik_sesa_bojonegoro_app/screens/dashboard/add_penerimaan_screens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:heroicons/heroicons.dart';
@@ -10,63 +11,54 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Dummy data untuk contoh
-    final List<Map<String, dynamic>> transactions = [
+    final List<Map<String, dynamic>> penerimaanList = [
       {
-        'id': '#1001',
-        'item': 'Mori Biru Jempol',
-        'quantity': '10 Yard',
-        'amount': 150000,
-        'date': DateTime(2023, 1, 12),
-        'icon': HeroIcons.square2Stack,
-        'color': Colors.blue,
+        'tanggal': DateTime.now().subtract(const Duration(days: 1)),
+        'transaksi': 'Batik Cap',
+        'pembeli': 'Bu Puji',
+        'quantity': 10,
+        'satuan': 'Pcs',
+        'harga': 150000,
+        'total': 1500000,
       },
       {
-        'id': '#1002',
-        'item': 'Kain Katun Prima',
-        'quantity': '15 Meter',
-        'amount': 200000,
-        'date': DateTime(2023, 1, 10),
-        'icon': HeroIcons.swatch,
-        'color': Colors.green,
+        'tanggal': DateTime.now().subtract(const Duration(days: 2)),
+        'transaksi': 'Batik Mliwis Ungu',
+        'pembeli': 'Bu Kades',
+        'quantity': 15,
+        'satuan': 'Pcs',
+        'harga': 200000,
+        'total': 3000000,
       },
       {
-        'id': '#1003',
-        'item': 'Benang Sutra Lux',
-        'quantity': '5 Kg',
-        'amount': 250000,
-        'date': DateTime(2023, 1, 8),
-        'icon': HeroIcons.queueList,
-        'color': Colors.orange,
+        'tanggal': DateTime.now().subtract(const Duration(days: 3)),
+        'transaksi': 'Batik Mliwis Coklat',
+        'pembeli': 'Dinkes Bojonegoro',
+        'quantity': 5,
+        'satuan': 'Pcs',
+        'harga': 250000,
+        'total': 1250000,
       },
       {
-        'id': '#1004',
-        'item': 'Pewarna Alami',
-        'quantity': '8 Botol',
-        'amount': 180000,
-        'date': DateTime(2023, 1, 5),
-        'icon': HeroIcons.paintBrush,
-        'color': Colors.purple,
-      },
-      {
-        'id': '#1005',
-        'item': 'Canting Tembaga',
-        'quantity': '3 Set',
-        'amount': 300000,
-        'date': DateTime(2023, 1, 3),
-        'icon': HeroIcons.wrenchScrewdriver,
-        'color': Colors.teal,
+        'tanggal': DateTime.now().subtract(const Duration(days: 4)),
+        'transaksi': 'Batik Tulis',
+        'pembeli': 'Bapak Sukardi',
+        'quantity': 8,
+        'satuan': 'Pcs',
+        'harga': 180000,
+        'total': 1440000,
       },
     ];
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         title: const Text(
           'Dashboard',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: 26,
-            color: Colors.black,
+            fontSize: 24,
+            color: Colors.black87,
           ),
         ),
         centerTitle: true,
@@ -74,7 +66,11 @@ class DashboardScreen extends ConsumerWidget {
         backgroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: const HeroIcon(HeroIcons.adjustmentsHorizontal),
+            icon: const HeroIcon(
+              HeroIcons.adjustmentsHorizontal,
+              color: Colors.black54,
+              size: 22,
+            ),
             onPressed: () {},
           ),
         ],
@@ -82,92 +78,145 @@ class DashboardScreen extends ConsumerWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Total Penerimaan Card
+            // Header with greeting and date
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               color: Colors.white,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Selamat ${_getGreeting()}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.black54,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        DateFormat('EEEE, d MMMM y').format(DateTime.now()),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.black54,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                   Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.blue,
-                      borderRadius: BorderRadius.circular(12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Total Penerimaan Bulan Ini',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.blue.shade100, width: 1),
+                    ),
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AddPenerimaanScreen(),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const HeroIcon(HeroIcons.currencyDollar,
-                                size: 40, color: Colors.white),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'Rp 12.450.000',
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const HeroIcon(
+                            HeroIcons.plus,
+                            size: 16,
+                            color: Colors.blue,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Tambah Penerimaan',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.blue.shade800,
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Icon(
-                                    Icons.arrow_upward,
-                                    color: Colors.green,
-                                    size: 16,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '12% dari bulan lalu',
-                                    style: TextStyle(
-                                      color: Colors.green,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
 
+            const SizedBox(height: 8),
+
+            // Stats Cards
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      title: 'Total Penerimaan',
+                      value: 'Rp 12.450.000',
+                      icon: HeroIcons.currencyDollar,
+                      color: Colors.white,
+                      growth: '12% dari bulan lalu',
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      title: 'Transaksi',
+                      value: '24',
+                      icon: HeroIcons.shoppingBag,
+                      color: Colors.white,
+                      growth: '5% dari bulan lalu',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
             // Quick Menu Section
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              margin: const EdgeInsets.only(top: 8),
-              color: Colors.white,
+              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  const Padding(
+                    padding: EdgeInsets.only(left: 8, bottom: 12),
+                    child: Text(
+                      'Menu Cepat',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 4,
+                    childAspectRatio: 0.9,
                     children: [
                       _buildMenuButton(
                         icon: HeroIcons.cube,
@@ -205,11 +254,23 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ),
 
+            const SizedBox(height: 16),
+
             // Penerimaan Terakhir Section
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              margin: const EdgeInsets.only(top: 8),
-              color: Colors.white,
+              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -219,8 +280,9 @@ class DashboardScreen extends ConsumerWidget {
                       const Text(
                         'Penerimaan Terakhir',
                         style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
                         ),
                       ),
                       TextButton(
@@ -236,16 +298,99 @@ class DashboardScreen extends ConsumerWidget {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Column(
-                    children: transactions.map((transaction) {
-                      return _buildTransactionCard(transaction, context);
-                    }).toList(),
-                  ),
+                  ...penerimaanList.map((penerimaan) {
+                    return _buildPenerimaanCard(penerimaan, context);
+                  }).toList(),
                 ],
               ),
             ),
+            const SizedBox(height: 20),
           ],
         ),
+      ),
+    );
+  }
+
+  String _getGreeting() {
+    var hour = DateTime.now().hour;
+    if (hour < 12) return 'Pagi';
+    if (hour < 15) return 'Siang';
+    if (hour < 18) return 'Sore';
+    return 'Malam';
+  }
+
+  Widget _buildStatCard({
+    required String title,
+    required String value,
+    required HeroIcons icon,
+    required Color color,
+    required String growth,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.blueAccent,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: HeroIcon(icon, size: 20, color: color),
+              ),
+              const Spacer(),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.arrow_upward, color: Colors.green, size: 16),
+                const SizedBox(width: 4),
+                Text(
+                  growth,
+                  style: const TextStyle(fontSize: 12, color: Colors.green),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -256,12 +401,13 @@ class DashboardScreen extends ConsumerWidget {
     required Color color,
     required VoidCallback onTap,
   }) {
-    return Column(
-      children: [
-        InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(50),
-          child: Container(
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
@@ -269,88 +415,106 @@ class DashboardScreen extends ConsumerWidget {
             ),
             child: HeroIcon(icon, size: 24, color: color),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(label, style: const TextStyle(fontSize: 12)),
-      ],
+          const SizedBox(height: 8),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.black87,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildTransactionCard(Map<String, dynamic> transaction, BuildContext context) {
+  Widget _buildPenerimaanCard(
+    Map<String, dynamic> penerimaan,
+    BuildContext context,
+  ) {
     final dateFormat = DateFormat('dd MMM yyyy');
-    
-    return Card(
+    final currencyFormat = NumberFormat('#,###');
+    final isToday = penerimaan['tanggal'].day == DateTime.now().day;
+
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 1,
-      shape: RoundedRectangleBorder(
+      decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: HeroIcon(HeroIcons.shoppingBag, size: 20, color: Colors.blue),
+        ),
+        title: Text(
+          penerimaan['transaksi'],
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Icon with colored background
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: transaction['color'].withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Center(
-                child: HeroIcon(
-                  transaction['icon'],
-                  size: 24,
-                  color: transaction['color'],
-                ),
-              ),
+            const SizedBox(height: 4),
+            Text(
+              penerimaan['pembeli'],
+              style: TextStyle(fontSize: 12, color: Colors.black54),
             ),
-            const SizedBox(width: 16),
-            
-            // Item details
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 4),
-                  Text(
-                    transaction['item'],
-                    style: const TextStyle(
-                      fontSize: 14,
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Text(
+                  dateFormat.format(penerimaan['tanggal']),
+                  style: TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+                if (isToday) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    transaction['quantity'],
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'Hari Ini',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.green.shade800,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
+              ],
+            ),
+          ],
+        ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              'Rp ${currencyFormat.format(penerimaan['total'])}',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: Colors.black87,
               ),
             ),
-            
-            // Amount and date
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  'Rp ${NumberFormat('#,###').format(transaction['amount'])}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  dateFormat.format(transaction['date']),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
+            const SizedBox(height: 4),
+            Text(
+              '${penerimaan['quantity']} ${penerimaan['satuan']}',
+              style: TextStyle(fontSize: 12, color: Colors.black54),
             ),
           ],
         ),
