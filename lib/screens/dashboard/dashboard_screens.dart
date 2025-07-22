@@ -57,8 +57,9 @@ class DashboardScreen extends ConsumerWidget {
         title: const Text(
           'Dashboard',
           style: TextStyle(
+            fontFamily: 'Sriwedari',
             fontWeight: FontWeight.bold,
-            fontSize: 24,
+            fontSize: 32,
             color: Colors.blueAccent,
           ),
         ),

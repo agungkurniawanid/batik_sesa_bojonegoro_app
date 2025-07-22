@@ -10,13 +10,31 @@ class SplashScreen extends ConsumerStatefulWidget {
   ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends ConsumerState<SplashScreen> {
+class _SplashScreenState extends ConsumerState<SplashScreen> 
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
+
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(seconds: 4), () {
+    
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+    
+    _fadeAnimation = Tween<double>(begin: 0.4, end: 1.0).animate(_controller);
+    
+    Future.delayed(const Duration(seconds: 5), () {
       Navigator.pushReplacementNamed(context, AppRoutes.pin);
     });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -25,104 +43,53 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // Background gradient
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Color(0xFF1976D2),  // Deep blue
-                  Color(0xFF0D47A1),  // Darker blue
+                  Color(0xFF1976D2),
+                  Color(0xFF0D47A1),
                 ],
               ),
             ),
           ),
-          
-          // Main content
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Animated logo container
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.white.withOpacity(0.4),
-                        blurRadius: 20,
-                        spreadRadius: 5,
-                      ),
-                    ],
-                  ),
-                  child: ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      colors: [Colors.white, Color(0xFF64B5F6)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ).createShader(bounds),
-                    child: const Icon(
-                      Icons.palette,
-                      size: 80,
-                      color: Colors.white,
-                    ),
+                Text(
+                  'BATIK SESA',
+                  style: TextStyle(
+                    fontFamily: 'Sriwedari',
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 56,
                   ),
                 ),
-                
-                const SizedBox(height: 30),
-                
-                // App name with text shadow
                 Text(
-                  'Batik Sesa',
+                  'Bojonegoro, Jawa Timur',
                   style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                         color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 36,
-                        shadows: [
-                          Shadow(
-                            blurRadius: 10,
-                            color: Colors.black.withOpacity(0.3),
-                            offset: const Offset(2, 2),
-                          ),
-                        ],
+                        fontWeight: FontWeight.w700,
+                        fontSize: 24,
                       ),
                 ),
-                
-                Text(
-                  'Bojonegoro',
-                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 32,
-                        shadows: [
-                          Shadow(
-                            blurRadius: 10,
-                            color: Colors.black.withOpacity(0.3),
-                            offset: const Offset(2, 2),
-                          ),
-                        ],
-                      ),
-                ),
-                
-                const SizedBox(height: 40),
-                
-                // Loading animation
-                LoadingAnimationWidget.staggeredDotsWave(
+                const SizedBox(height: 10),
+                LoadingAnimationWidget.progressiveDots(
                   color: Colors.white,
                   size: 50,
                 ),
-                
-                const SizedBox(height: 20),
-                
-                // Loading text
-                Text(
-                  'Memuat Aplikasi...',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
-                    fontSize: 16,
+                const SizedBox(height: 10),
+                FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Text(
+                    'Memuat Aplikasi...',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
                   ),
                 ),
               ],
