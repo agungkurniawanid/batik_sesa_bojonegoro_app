@@ -20,7 +20,6 @@ class _AddPenerimaanScreenState extends State<AddPenerimaanScreen> {
   bool _isLoading = false;
 
   DateTime? _selectedDate;
-  final List<String> _satuanList = ['Yard', 'Meter', 'Kg', 'Botol', 'Pcs'];
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -176,27 +175,15 @@ class _AddPenerimaanScreenState extends State<AddPenerimaanScreen> {
                   const SizedBox(width: 16),
                   Expanded(
                     flex: 3,
-                    child: DropdownButtonFormField<String>(
-                      value: _satuanList.first,
-                      items: _satuanList.map((satuan) {
-                        return DropdownMenuItem(
-                          value: satuan,
-                          child: Text(satuan),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _satuanController.text = value!;
-                        });
-                      },
+                    child: TextFormField(
+                      controller: _satuanController,
                       decoration: const InputDecoration(
                         labelText: 'Satuan',
                         border: OutlineInputBorder(),
                         prefixIcon: HeroIcon(HeroIcons.scale),
                       ),
-                      onSaved: (value) {
-                        _satuanController.text = value!;
-                      },
+                      validator: (value) =>
+                          value!.isEmpty ? 'Masukkan satuan' : null,
                     ),
                   ),
                 ],

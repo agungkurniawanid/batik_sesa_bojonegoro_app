@@ -22,7 +22,6 @@ class _EditPenerimaanScreenState extends State<EditPenerimaanScreen> {
   bool _isLoading = false;
 
   DateTime? _selectedDate;
-  final List<String> _satuanList = ['Yard', 'Meter', 'Kg', 'Botol', 'Pcs'];
 
   @override
   void initState() {
@@ -191,27 +190,15 @@ class _EditPenerimaanScreenState extends State<EditPenerimaanScreen> {
                   const SizedBox(width: 16),
                   Expanded(
                     flex: 3,
-                    child: DropdownButtonFormField<String>(
-                      value: _satuanController.text,
-                      items: _satuanList.map((satuan) {
-                        return DropdownMenuItem(
-                          value: satuan,
-                          child: Text(satuan),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _satuanController.text = value!;
-                        });
-                      },
+                    child: TextFormField(
+                      controller: _satuanController,
                       decoration: const InputDecoration(
                         labelText: 'Satuan',
                         border: OutlineInputBorder(),
                         prefixIcon: HeroIcon(HeroIcons.scale),
                       ),
-                      onSaved: (value) {
-                        _satuanController.text = value!;
-                      },
+                      validator: (value) =>
+                          value!.isEmpty ? 'Masukkan satuan' : null,
                     ),
                   ),
                 ],
