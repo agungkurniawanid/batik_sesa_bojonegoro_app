@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:batik_sesa_bojonegoro_app/core/routes/app_routes.dart';
 import 'package:batik_sesa_bojonegoro_app/screens/splash_screens.dart';
-
 import 'firebase_options.dart';
 
 Future<void> main() async {

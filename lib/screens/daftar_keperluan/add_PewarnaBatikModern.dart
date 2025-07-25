@@ -1,15 +1,17 @@
+import 'package:batik_sesa_bojonegoro_app/core/model/keperluan_model.dart';
+import 'package:batik_sesa_bojonegoro_app/core/provider/keperluan_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:heroicons/heroicons.dart';
-import 'daftar_keperluan_screens.dart';
 
-class AddPewarnaBatikModernScreen extends StatefulWidget {
+class AddPewarnaBatikModernScreen extends ConsumerStatefulWidget {
   const AddPewarnaBatikModernScreen({super.key});
 
   @override
-  State<AddPewarnaBatikModernScreen> createState() => _AddPewarnaBatikModernScreenState();
+  ConsumerState<AddPewarnaBatikModernScreen> createState() => _AddPewarnaBatikModernScreenState();
 }
 
-class _AddPewarnaBatikModernScreenState extends State<AddPewarnaBatikModernScreen> {
+class _AddPewarnaBatikModernScreenState extends ConsumerState<AddPewarnaBatikModernScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _namaController = TextEditingController();
   final TextEditingController _harga1kgController = TextEditingController();
@@ -34,8 +36,9 @@ class _AddPewarnaBatikModernScreenState extends State<AddPewarnaBatikModernScree
     setState(() => _isLoading = true);
 
     try {
+      final repository = ref.read(keperluanRepositoryProvider);
       final pewarnaBaru = PewarnaBatikModern(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: '', // ID akan digenerate otomatis oleh Firebase
         kategori: _selectedKategori!,
         nama: _namaController.text.trim(),
         harga1kg: int.parse(_harga1kgController.text.trim()),
@@ -44,30 +47,25 @@ class _AddPewarnaBatikModernScreenState extends State<AddPewarnaBatikModernScree
         harga1ons: int.parse(_harga1onsController.text.trim()),
       );
 
-      print('Data Pewarna Batik Ditambahkan: $pewarnaBaru');
+      await repository.addPewarnaBatikModern(pewarnaBaru);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Data pewarna batik berhasil ditambahkan'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pop(context);
-      }
+      // Tidak perlu pengecekan mounted karena menggunakan ConsumerState
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Data pewarna batik berhasil ditambahkan'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal menambahkan data pewarna batik: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal menambahkan data pewarna batik: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      setState(() => _isLoading = false);
     }
   }
 
@@ -145,8 +143,11 @@ class _AddPewarnaBatikModernScreenState extends State<AddPewarnaBatikModernScree
                   prefixText: 'Rp ',
                 ),
                 keyboardType: TextInputType.number,
-                validator: (value) =>
-                    value!.isEmpty ? 'Masukkan harga 1 Kg' : null,
+                validator: (value) {
+                  if (value!.isEmpty) return 'Masukkan harga 1 Kg';
+                  if (int.tryParse(value) == null) return 'Masukkan angka yang valid';
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
 
@@ -160,8 +161,11 @@ class _AddPewarnaBatikModernScreenState extends State<AddPewarnaBatikModernScree
                   prefixText: 'Rp ',
                 ),
                 keyboardType: TextInputType.number,
-                validator: (value) =>
-                    value!.isEmpty ? 'Masukkan harga 0.5 Kg' : null,
+                validator: (value) {
+                  if (value!.isEmpty) return 'Masukkan harga 0.5 Kg';
+                  if (int.tryParse(value) == null) return 'Masukkan angka yang valid';
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
 
@@ -175,8 +179,11 @@ class _AddPewarnaBatikModernScreenState extends State<AddPewarnaBatikModernScree
                   prefixText: 'Rp ',
                 ),
                 keyboardType: TextInputType.number,
-                validator: (value) =>
-                    value!.isEmpty ? 'Masukkan harga 0.25 Kg' : null,
+                validator: (value) {
+                  if (value!.isEmpty) return 'Masukkan harga 0.25 Kg';
+                  if (int.tryParse(value) == null) return 'Masukkan angka yang valid';
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
 
@@ -190,8 +197,11 @@ class _AddPewarnaBatikModernScreenState extends State<AddPewarnaBatikModernScree
                   prefixText: 'Rp ',
                 ),
                 keyboardType: TextInputType.number,
-                validator: (value) =>
-                    value!.isEmpty ? 'Masukkan harga 1 Ons' : null,
+                validator: (value) {
+                  if (value!.isEmpty) return 'Masukkan harga 1 Ons';
+                  if (int.tryParse(value) == null) return 'Masukkan angka yang valid';
+                  return null;
+                },
               ),
               const SizedBox(height: 24),
 

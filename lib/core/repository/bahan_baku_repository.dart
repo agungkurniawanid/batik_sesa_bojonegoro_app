@@ -1,7 +1,5 @@
+import 'package:batik_sesa_bojonegoro_app/core/model/bahan_baku_model.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../model/bahan_baku_model.dart';
 
 class BahanBakuRepository {
   BahanBakuRepository(this._database);

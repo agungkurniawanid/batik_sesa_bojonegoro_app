@@ -1,15 +1,17 @@
+import 'package:batik_sesa_bojonegoro_app/core/model/keperluan_model.dart';
+import 'package:batik_sesa_bojonegoro_app/core/provider/keperluan_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:heroicons/heroicons.dart';
-import 'daftar_keperluan_screens.dart';
 
-class AddBahanBakuTradisionalScreen extends StatefulWidget {
+class AddBahanBakuTradisionalScreen extends ConsumerStatefulWidget {
   const AddBahanBakuTradisionalScreen({super.key});
 
   @override
-  State<AddBahanBakuTradisionalScreen> createState() => _AddBahanBakuTradisionalScreenState();
+  ConsumerState<AddBahanBakuTradisionalScreen> createState() => _AddBahanBakuTradisionalScreenState();
 }
 
-class _AddBahanBakuTradisionalScreenState extends State<AddBahanBakuTradisionalScreen> {
+class _AddBahanBakuTradisionalScreenState extends ConsumerState<AddBahanBakuTradisionalScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _namaController = TextEditingController();
   final TextEditingController _hargaController = TextEditingController();
@@ -36,8 +38,9 @@ class _AddBahanBakuTradisionalScreenState extends State<AddBahanBakuTradisionalS
     setState(() => _isLoading = true);
 
     try {
+      final repository = ref.read(keperluanRepositoryProvider);
       final bahanBaru = BahanBakuTradisional(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: '', // ID akan di-generate oleh Firebase
         kategori: _selectedKategori!,
         nama: _namaController.text.trim(),
         harga: int.parse(_hargaController.text.trim()),
@@ -45,7 +48,7 @@ class _AddBahanBakuTradisionalScreenState extends State<AddBahanBakuTradisionalS
         keterangan: _keteranganController.text.trim(),
       );
 
-      print('Data Bahan Baku Ditambahkan: $bahanBaru');
+      await repository.addBahanBakuTradisional(bahanBaru);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

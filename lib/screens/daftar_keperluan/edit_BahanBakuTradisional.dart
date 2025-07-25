@@ -1,17 +1,21 @@
+import 'package:batik_sesa_bojonegoro_app/core/model/keperluan_model.dart';
+import 'package:batik_sesa_bojonegoro_app/core/provider/keperluan_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:heroicons/heroicons.dart';
-import 'daftar_keperluan_screens.dart';
 
-class EditBahanBakuTradisionalScreen extends StatefulWidget {
+class EditBahanBakuTradisionalScreen extends ConsumerStatefulWidget {
   final BahanBakuTradisional item;
 
   const EditBahanBakuTradisionalScreen({super.key, required this.item});
 
   @override
-  State<EditBahanBakuTradisionalScreen> createState() => _EditBahanBakuTradisionalScreenState();
+  ConsumerState<EditBahanBakuTradisionalScreen> createState() => 
+      _EditBahanBakuTradisionalScreenState();
 }
 
-class _EditBahanBakuTradisionalScreenState extends State<EditBahanBakuTradisionalScreen> {
+class _EditBahanBakuTradisionalScreenState 
+    extends ConsumerState<EditBahanBakuTradisionalScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _namaController;
   late TextEditingController _hargaController;
@@ -48,6 +52,7 @@ class _EditBahanBakuTradisionalScreenState extends State<EditBahanBakuTradisiona
     setState(() => _isLoading = true);
 
     try {
+      final repository = ref.read(keperluanRepositoryProvider);
       final bahanUpdate = BahanBakuTradisional(
         id: widget.item.id,
         kategori: _selectedKategori!,
@@ -57,30 +62,24 @@ class _EditBahanBakuTradisionalScreenState extends State<EditBahanBakuTradisiona
         keterangan: _keteranganController.text.trim(),
       );
 
-      print('Data Bahan Baku Diupdate: $bahanUpdate');
+      await repository.updateBahanBakuTradisional(bahanUpdate);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Data bahan baku berhasil diupdate'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pop(context);
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Data bahan baku berhasil diupdate'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal mengupdate data bahan baku: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal mengupdate data bahan baku: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      setState(() => _isLoading = false);
     }
   }
 
@@ -158,8 +157,11 @@ class _EditBahanBakuTradisionalScreenState extends State<EditBahanBakuTradisiona
                   prefixText: 'Rp ',
                 ),
                 keyboardType: TextInputType.number,
-                validator: (value) =>
-                    value!.isEmpty ? 'Masukkan harga' : null,
+                validator: (value) {
+                  if (value!.isEmpty) return 'Masukkan harga';
+                  if (int.tryParse(value) == null) return 'Masukkan angka yang valid';
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
 

@@ -1,119 +1,24 @@
+import 'package:batik_sesa_bojonegoro_app/core/model/keperluan_model.dart';
+import 'package:batik_sesa_bojonegoro_app/core/provider/keperluan_provider.dart';
+import 'package:batik_sesa_bojonegoro_app/core/repository/keperluan_repository.dart';
 import 'package:batik_sesa_bojonegoro_app/screens/daftar_keperluan/edit_BahanBakuTradisional.dart';
 import 'package:batik_sesa_bojonegoro_app/screens/daftar_keperluan/edit_PewarnaBatikModern.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:heroicons/heroicons.dart';
+import 'package:intl/intl.dart';
 import 'add_BahanBakuTradisional.dart';
 import 'add_PewarnaBatikModern.dart';
-
-class BahanBakuTradisional {
-  final String id;
-  final String kategori;
-  final String nama;
-  final int harga;
-  final String satuan;
-  final String keterangan;
-
-  BahanBakuTradisional({
-    required this.id,
-    required this.kategori,
-    required this.nama,
-    required this.harga,
-    required this.satuan,
-    required this.keterangan,
-  });
-}
-
-class PewarnaBatikModern {
-  final String id;
-  final String kategori;
-  final String nama;
-  final int harga1kg;
-  final int harga05kg;
-  final int harga025kg;
-  final int harga1ons;
-
-  PewarnaBatikModern({
-    required this.id,
-    required this.kategori,
-    required this.nama,
-    required this.harga1kg,
-    required this.harga05kg,
-    required this.harga025kg,
-    required this.harga1ons,
-  });
-}
-
-final List<BahanBakuTradisional> daftarBahanBakuTradisional = [
-  BahanBakuTradisional(
-    id: '1',
-    kategori: 'Canting Batik',
-    nama: 'canting kuningan no 1',
-    harga: 2500,
-    satuan: 'biji',
-    keterangan: 'cucuk 1',
-  ),
-  BahanBakuTradisional(
-    id: '2',
-    kategori: 'Canting Batik',
-    nama: 'canting tembaga no 1',
-    harga: 3000,
-    satuan: 'biji',
-    keterangan: 'cucuk 1',
-  ),
-  BahanBakuTradisional(
-    id: '3',
-    kategori: 'Wajan dan kompor Batik',
-    nama: 'wajan canting',
-    harga: 10000,
-    satuan: 'biji',
-    keterangan: 'wajan',
-  ),
-  BahanBakuTradisional(
-    id: '4',
-    kategori: 'Wajan dan kompor Batik',
-    nama: 'loyang cap',
-    harga: 210000,
-    satuan: 'per kg',
-    keterangan: 'berat kurang lebih 2,8 kg',
-  ),
-];
-
-final List<PewarnaBatikModern> daftarPewarnaBatikModern = [
-  PewarnaBatikModern(
-    id: '1',
-    kategori: 'Pewarna Remazol Batik',
-    nama: 'remazol yellow FG 150%',
-    harga1kg: 137000,
-    harga05kg: 69000,
-    harga025kg: 34500,
-    harga1ons: 19000,
-  ),
-  PewarnaBatikModern(
-    id: '2',
-    kategori: 'Rapid',
-    nama: 'rapid hitam',
-    harga1kg: 140000,
-    harga05kg: 70000,
-    harga025kg: 37500,
-    harga1ons: 19000,
-  ),
-  PewarnaBatikModern(
-    id: '3',
-    kategori: 'Indigosol',
-    nama: 'Biru O4B',
-    harga1kg: 390000,
-    harga05kg: 195000,
-    harga025kg: 100000,
-    harga1ons: 44000,
-  ),
-];
 
 class DaftarKeperluanScreen extends ConsumerWidget {
   const DaftarKeperluanScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final bahanBakuAsync = ref.watch(bahanBakuTradisionalStreamProvider);
+    final pewarnaBatikAsync = ref.watch(pewarnaBatikModernStreamProvider);
+    ref.read(keperluanRepositoryProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
@@ -152,7 +57,8 @@ class DaftarKeperluanScreen extends ConsumerWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const AddBahanBakuTradisionalScreen(),
+                          builder: (context) =>
+                              const AddBahanBakuTradisionalScreen(),
                         ),
                       );
                     },
@@ -181,12 +87,42 @@ class DaftarKeperluanScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
               // Categories for Bahan Baku Tradisional
-              _buildCategorySection(context, 'Canting Batik', 'BahanBakuTradisional'),
-              _buildCategorySection(context, 'Wajan dan kompor Batik', 'BahanBakuTradisional'),
-              _buildCategorySection(context, 'Perlengkapan Batik Cap dan Malam', 'BahanBakuTradisional'),
-              _buildCategorySection(context, 'Warna Alam', 'BahanBakuTradisional'),
-              _buildCategorySection(context, 'Bumbu Malam', 'BahanBakuTradisional'),
-              _buildCategorySection(context, 'Kimia Batik', 'BahanBakuTradisional'),
+              _buildCategorySection(
+                context,
+                'Canting Batik',
+                'BahanBakuTradisional',
+                bahanBakuAsync,
+              ),
+              _buildCategorySection(
+                context,
+                'Wajan dan kompor Batik',
+                'BahanBakuTradisional',
+                bahanBakuAsync,
+              ),
+              _buildCategorySection(
+                context,
+                'Perlengkapan Batik Cap dan Malam',
+                'BahanBakuTradisional',
+                bahanBakuAsync,
+              ),
+              _buildCategorySection(
+                context,
+                'Warna Alam',
+                'BahanBakuTradisional',
+                bahanBakuAsync,
+              ),
+              _buildCategorySection(
+                context,
+                'Bumbu Malam',
+                'BahanBakuTradisional',
+                bahanBakuAsync,
+              ),
+              _buildCategorySection(
+                context,
+                'Kimia Batik',
+                'BahanBakuTradisional',
+                bahanBakuAsync,
+              ),
               const SizedBox(height: 24),
 
               // Pewarna Batik Modern Section
@@ -206,7 +142,8 @@ class DaftarKeperluanScreen extends ConsumerWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const AddPewarnaBatikModernScreen(),
+                          builder: (context) =>
+                              const AddPewarnaBatikModernScreen(),
                         ),
                       );
                     },
@@ -235,9 +172,24 @@ class DaftarKeperluanScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
               // Categories for Pewarna Batik Modern
-              _buildCategorySection(context, 'Pewarna Remazol Batik', 'PewarnaBatikModern'),
-              _buildCategorySection(context, 'Rapid', 'PewarnaBatikModern'),
-              _buildCategorySection(context, 'Indigosol', 'PewarnaBatikModern'),
+              _buildCategorySection(
+                context,
+                'Pewarna Remazol Batik',
+                'PewarnaBatikModern',
+                pewarnaBatikAsync,
+              ),
+              _buildCategorySection(
+                context,
+                'Rapid',
+                'PewarnaBatikModern',
+                pewarnaBatikAsync,
+              ),
+              _buildCategorySection(
+                context,
+                'Indigosol',
+                'PewarnaBatikModern',
+                pewarnaBatikAsync,
+              ),
             ],
           ),
         ),
@@ -245,69 +197,98 @@ class DaftarKeperluanScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCategorySection(BuildContext context, String category, String type) {
-    List items = [];
-    if (type == 'BahanBakuTradisional') {
-      items = daftarBahanBakuTradisional.where((item) => item.kategori == category).toList();
-    } else {
-      items = daftarPewarnaBatikModern.where((item) => item.kategori == category).toList();
-    }
+  Widget _buildCategorySection(
+    BuildContext context,
+    String category,
+    String type,
+    AsyncValue<List<dynamic>> asyncData,
+  ) {
+    return asyncData.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(child: Text('Error: $error')),
+      data: (items) {
+        List filteredItems = [];
+        if (type == 'BahanBakuTradisional') {
+          filteredItems = items
+              .where((item) => item.kategori == category)
+              .toList();
+        } else {
+          filteredItems = items
+              .where((item) => item.kategori == category)
+              .toList();
+        }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              category,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                
-              },
-              child: const Text(
-                'Lihat Semua',
-                style: TextStyle(color: Colors.blue),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        items.isEmpty
-            ? const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  'Belum ada data',
-                  style: TextStyle(color: Colors.grey),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  category,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
                 ),
-              )
-            : ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: items.length > 3 ? 3 : items.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  if (type == 'BahanBakuTradisional') {
-                    final item = items[index] as BahanBakuTradisional;
-                    return _buildBahanBakuTradisionalItem(context, item);
-                  } else {
-                    final item = items[index] as PewarnaBatikModern;
-                    return _buildPewarnaBatikModernItem(context, item);
-                  }
-                },
-              ),
-        const SizedBox(height: 16),
-      ],
+                TextButton(
+                  onPressed: () {},
+                  child: const Text(
+                    'Lihat Semua',
+                    style: TextStyle(color: Colors.blue),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            filteredItems.isEmpty
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      'Belum ada data',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  )
+                : ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: filteredItems.length > 3
+                        ? 3
+                        : filteredItems.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      if (type == 'BahanBakuTradisional') {
+                        final item =
+                            filteredItems[index] as BahanBakuTradisional;
+                        return _buildBahanBakuTradisionalItem(context, item);
+                      } else {
+                        final item = filteredItems[index] as PewarnaBatikModern;
+                        return _buildPewarnaBatikModernItem(context, item);
+                      }
+                    },
+                  ),
+            const SizedBox(height: 16),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildBahanBakuTradisionalItem(BuildContext context, BahanBakuTradisional item) {
+  Widget _buildBahanBakuTradisionalItem(
+    BuildContext context,
+    BahanBakuTradisional item,
+  ) {
+    final repository = ProviderScope.containerOf(context).read(keperluanRepositoryProvider);
+    
+    // Format harga dengan pemisah ribuan
+    final formattedHarga = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    ).format(item.harga);
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -327,11 +308,13 @@ class DaftarKeperluanScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                item.nama,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+              Expanded(
+                child: Text(
+                  item.nama,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               PopupMenuButton(
@@ -367,7 +350,7 @@ class DaftarKeperluanScreen extends ConsumerWidget {
                       ),
                     );
                   } else if (value == 'delete') {
-                    _showDeleteConfirmation(context, item.id, 'BahanBakuTradisional');
+                    _showDeleteConfirmation(context, item.id, 'BahanBakuTradisional', repository);
                   }
                 },
               ),
@@ -377,21 +360,67 @@ class DaftarKeperluanScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Rp ${item.harga}'),
-              Text(item.satuan),
+              Row(
+                children: [
+                  const HeroIcon(HeroIcons.currencyDollar, size: 16, color: Colors.green),
+                  const SizedBox(width: 4),
+                  Text(
+                    formattedHarga,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  const HeroIcon(HeroIcons.scale, size: 16, color: Colors.blue),
+                  const SizedBox(width: 4),
+                  Text(
+                    item.satuan,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            item.keterangan,
-            style: const TextStyle(color: Colors.grey),
-          ),
+          if (item.keterangan.isNotEmpty)
+            Row(
+              children: [
+                const HeroIcon(HeroIcons.informationCircle, size: 16, color: Colors.grey),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    item.keterangan,
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildPewarnaBatikModernItem(BuildContext context, PewarnaBatikModern item) {
+  Widget _buildPewarnaBatikModernItem(
+    BuildContext context,
+    PewarnaBatikModern item,
+  ) {
+    final repository = ProviderScope.containerOf(context).read(keperluanRepositoryProvider);
+    
+    // Format semua harga dengan pemisah ribuan
+    final formatHarga = (int harga) => NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    ).format(harga);
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -411,11 +440,13 @@ class DaftarKeperluanScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                item.nama,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+              Expanded(
+                child: Text(
+                  item.nama,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               PopupMenuButton(
@@ -451,28 +482,30 @@ class DaftarKeperluanScreen extends ConsumerWidget {
                       ),
                     );
                   } else if (value == 'delete') {
-                    _showDeleteConfirmation(context, item.id, 'PewarnaBatikModern');
+                    _showDeleteConfirmation(context, item.id, 'PewarnaBatikModern', repository);
                   }
                 },
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('1 Kg: Rp ${item.harga1kg}'),
-                  Text('0.5 Kg: Rp ${item.harga05kg}'),
+                  _buildHargaItem('1 Kg', formatHarga(item.harga1kg)),
+                  const SizedBox(height: 8),
+                  _buildHargaItem('0.5 Kg', formatHarga(item.harga05kg)),
                 ],
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('0.25 Kg: Rp ${item.harga025kg}'),
-                  Text('1 Ons: Rp ${item.harga1ons}'),
+                  _buildHargaItem('0.25 Kg', formatHarga(item.harga025kg)),
+                  const SizedBox(height: 8),
+                  _buildHargaItem('1 Ons', formatHarga(item.harga1ons)),
                 ],
               ),
             ],
@@ -482,7 +515,47 @@ class DaftarKeperluanScreen extends ConsumerWidget {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, String id, String type) {
+  Widget _buildHargaItem(String label, String harga) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.blue.shade800,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Row(
+          children: [
+            const HeroIcon(HeroIcons.currencyDollar, size: 16, color: Colors.green),
+            const SizedBox(width: 4),
+            Text(
+              harga,
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  void _showDeleteConfirmation(
+    BuildContext context,
+    String id,
+    String type,
+    KeperluanRepository repository,
+  ) {
     showDialog(
       context: context,
       builder: (context) {
@@ -499,15 +572,29 @@ class DaftarKeperluanScreen extends ConsumerWidget {
                 backgroundColor: Colors.red.shade50,
                 foregroundColor: Colors.red,
               ),
-              onPressed: () {
-                // Implement delete logic here
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Data berhasil dihapus'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
+              onPressed: () async {
+                try {
+                  if (type == 'BahanBakuTradisional') {
+                    await repository.deleteBahanBakuTradisional(id);
+                  } else {
+                    await repository.deletePewarnaBatikModern(id);
+                  }
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Data berhasil dihapus'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                } catch (e) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Gagal menghapus data: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               },
               child: const Text('Hapus'),
             ),

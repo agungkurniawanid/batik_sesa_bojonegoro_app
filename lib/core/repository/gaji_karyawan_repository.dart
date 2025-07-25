@@ -1,5 +1,5 @@
 import 'package:firebase_database/firebase_database.dart';
-import '../model/gaji_karyawan_model.dart';
+import 'package:batik_sesa_bojonegoro_app/core/model/gaji_karyawan_model.dart';
 
 class KaryawanRepository {
   KaryawanRepository(this._database);

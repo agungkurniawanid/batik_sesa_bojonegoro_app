@@ -1,6 +1,6 @@
 import 'package:firebase_database/firebase_database.dart';
 
-import '../model/kain_model.dart';
+import 'package:batik_sesa_bojonegoro_app/core/model/kain_model.dart';
 
 
 class KainRepository {
