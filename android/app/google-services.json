@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "13164877228",
+    "project_id": "projectbatiksesa",
+    "storage_bucket": "projectbatiksesa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:13164877228:android:53b75415d9668f03a8d609",
+        "android_client_info": {
+          "package_name": "com.example.batik_sesa_bojonegoro_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDi3ImkOm24fKoYD9Zzi-iOOlDWzWSa05s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

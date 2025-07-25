@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:heroicons/heroicons.dart';
-import 'package:batik_sesa_bojonegoro_app/screens/bahan_baku/bahan_baku_screens.dart';
 
-class EditBahanBakuScreen extends StatefulWidget {
+import '../../core/model/bahan_baku_model.dart';
+import '../../core/provider/bahanbaku_provider.dart';
+
+// 1. Ubah menjadi ConsumerStatefulWidget
+class EditBahanBakuScreen extends ConsumerStatefulWidget {
   final BahanBaku bahanBaku;
 
   const EditBahanBakuScreen({super.key, required this.bahanBaku});
 
   @override
-  State<EditBahanBakuScreen> createState() => _EditBahanBakuScreenState();
+  ConsumerState<EditBahanBakuScreen> createState() => _EditBahanBakuScreenState();
 }
 
-class _EditBahanBakuScreenState extends State<EditBahanBakuScreen> {
+class _EditBahanBakuScreenState extends ConsumerState<EditBahanBakuScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _namaController;
   late TextEditingController _hargaBeliController;
@@ -23,13 +27,15 @@ class _EditBahanBakuScreenState extends State<EditBahanBakuScreen> {
   @override
   void initState() {
     super.initState();
+    // Inisialisasi controller dengan data yang ada
     _namaController = TextEditingController(text: widget.bahanBaku.nama);
-    _hargaBeliController = TextEditingController(text: widget.bahanBaku.hargaBeli);
-    _ketersediaanController = TextEditingController(text: widget.bahanBaku.ketersediaan);
+    _hargaBeliController = TextEditingController(text: widget.bahanBaku.hargaBeli.toString());
+    _ketersediaanController = TextEditingController(text: widget.bahanBaku.ketersediaan.toString());
     _satuanController = TextEditingController(text: widget.bahanBaku.satuan);
   }
 
   Future<void> _submitForm() async {
+    // Validasi form
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -37,15 +43,19 @@ class _EditBahanBakuScreenState extends State<EditBahanBakuScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final bahanUpdated = {
-        'nama': _namaController.text.trim(),
-        'hargaBeli': _hargaBeliController.text.trim(),
-        'ketersediaan': _ketersediaanController.text.trim(),
-        'satuan': _satuanController.text.trim(),
-      };
+      // Buat objek BahanBaku yang diperbarui dengan ID yang sama
+      final updatedBahanBaku = BahanBaku(
+        id: widget.bahanBaku.id,
+        nama: _namaController.text.trim(),
+        hargaBeli: num.tryParse(_hargaBeliController.text.trim()) ?? 0,
+        ketersediaan: num.tryParse(_ketersediaanController.text.trim()) ?? 0,
+        satuan: _satuanController.text.trim(),
+      );
 
-      print('Data Bahan Baku Diperbarui: $bahanUpdated');
+      // 2. Baca repository provider dan panggil method updateBahanBaku
+      await ref.read(bahanBakuRepositoryProvider).updateBahanBaku(updatedBahanBaku);
 
+      // Tampilkan notifikasi sukses dan kembali ke halaman sebelumnya
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -53,9 +63,10 @@ class _EditBahanBakuScreenState extends State<EditBahanBakuScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pop(context);
+        Navigator.of(context).pop();
       }
     } catch (e) {
+      // Tampilkan notifikasi error jika gagal
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -65,6 +76,7 @@ class _EditBahanBakuScreenState extends State<EditBahanBakuScreen> {
         );
       }
     } finally {
+      // Hentikan loading state
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -98,7 +110,7 @@ class _EditBahanBakuScreenState extends State<EditBahanBakuScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Nama Bahan Baku
+              // Form fields... (sama seperti sebelumnya)
               TextFormField(
                 controller: _namaController,
                 decoration: const InputDecoration(
@@ -107,11 +119,10 @@ class _EditBahanBakuScreenState extends State<EditBahanBakuScreen> {
                   prefixIcon: HeroIcon(HeroIcons.tag),
                 ),
                 validator: (value) =>
-                    value!.isEmpty ? 'Masukkan nama bahan baku' : null,
+                value!.isEmpty ? 'Masukkan nama bahan baku' : null,
               ),
               const SizedBox(height: 16),
 
-              // Harga Beli
               TextFormField(
                 controller: _hargaBeliController,
                 decoration: const InputDecoration(
@@ -122,12 +133,18 @@ class _EditBahanBakuScreenState extends State<EditBahanBakuScreen> {
                   prefixText: 'Rp ',
                 ),
                 keyboardType: TextInputType.number,
-                validator: (value) =>
-                    value!.isEmpty ? 'Masukkan harga beli' : null,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Masukkan harga beli';
+                  }
+                  if (num.tryParse(value) == null) {
+                    return 'Masukkan angka yang valid';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
 
-              // Ketersediaan
               TextFormField(
                 controller: _ketersediaanController,
                 decoration: const InputDecoration(
@@ -137,12 +154,18 @@ class _EditBahanBakuScreenState extends State<EditBahanBakuScreen> {
                   prefixIcon: HeroIcon(HeroIcons.archiveBox),
                 ),
                 keyboardType: TextInputType.number,
-                validator: (value) =>
-                    value!.isEmpty ? 'Masukkan jumlah ketersediaan' : null,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Masukkan jumlah ketersediaan';
+                  }
+                  if (num.tryParse(value) == null) {
+                    return 'Masukkan angka yang valid';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
 
-              // Satuan
               TextFormField(
                 controller: _satuanController,
                 decoration: const InputDecoration(
@@ -152,11 +175,10 @@ class _EditBahanBakuScreenState extends State<EditBahanBakuScreen> {
                   prefixIcon: HeroIcon(HeroIcons.scale),
                 ),
                 validator: (value) =>
-                    value!.isEmpty ? 'Masukkan satuan' : null,
+                value!.isEmpty ? 'Masukkan satuan' : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
-              // Submit Button
               ElevatedButton(
                 onPressed: _isLoading ? null : _submitForm,
                 style: ElevatedButton.styleFrom(
@@ -167,21 +189,21 @@ class _EditBahanBakuScreenState extends State<EditBahanBakuScreen> {
                 ),
                 child: _isLoading
                     ? const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 3,
-                        ),
-                      )
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 3,
+                  ),
+                )
                     : const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          HeroIcon(HeroIcons.document, size: 20),
-                          SizedBox(width: 8),
-                          Text('Simpan Perubahan'),
-                        ],
-                      ),
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    HeroIcon(HeroIcons.documentCheck, size: 20),
+                    SizedBox(width: 8),
+                    Text('Simpan Perubahan'),
+                  ],
+                ),
               ),
             ],
           ),

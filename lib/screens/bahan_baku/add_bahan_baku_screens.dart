@@ -1,14 +1,19 @@
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:heroicons/heroicons.dart';
 
-class AddBahanBakuScreen extends StatefulWidget {
+import '../../core/provider/bahanbaku_provider.dart';
+
+// 1. Ubah menjadi ConsumerStatefulWidget
+class AddBahanBakuScreen extends ConsumerStatefulWidget {
   const AddBahanBakuScreen({super.key});
 
   @override
-  State<AddBahanBakuScreen> createState() => _AddBahanBakuScreenState();
+  ConsumerState<AddBahanBakuScreen> createState() => _AddBahanBakuScreenState();
 }
 
-class _AddBahanBakuScreenState extends State<AddBahanBakuScreen> {
+class _AddBahanBakuScreenState extends ConsumerState<AddBahanBakuScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _namaController = TextEditingController();
   final TextEditingController _hargaBeliController = TextEditingController();
@@ -18,6 +23,7 @@ class _AddBahanBakuScreenState extends State<AddBahanBakuScreen> {
   bool _isLoading = false;
 
   Future<void> _submitForm() async {
+    // Validasi form
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -25,15 +31,21 @@ class _AddBahanBakuScreenState extends State<AddBahanBakuScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final bahanBaru = {
-        'nama': _namaController.text.trim(),
-        'hargaBeli': _hargaBeliController.text.trim(),
-        'ketersediaan': _ketersediaanController.text.trim(),
-        'satuan': _satuanController.text.trim(),
-      };
+      // Ambil nilai dari controller
+      final nama = _namaController.text.trim();
+      final hargaBeli = num.tryParse(_hargaBeliController.text.trim()) ?? 0;
+      final ketersediaan = num.tryParse(_ketersediaanController.text.trim()) ?? 0;
+      final satuan = _satuanController.text.trim();
 
-      print('Data Bahan Baku Ditambahkan: $bahanBaru');
+      // 2. Baca repository provider dan panggil method addBahanBaku
+      await ref.read(bahanBakuRepositoryProvider).addBahanBaku(
+        nama: nama,
+        hargaBeli: hargaBeli,
+        ketersediaan: ketersediaan,
+        satuan: satuan,
+      );
 
+      // Tampilkan notifikasi sukses dan kembali ke halaman sebelumnya
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -41,9 +53,10 @@ class _AddBahanBakuScreenState extends State<AddBahanBakuScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pop(context);
+        Navigator.of(context).pop();
       }
     } catch (e) {
+      // Tampilkan notifikasi error jika gagal
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -53,6 +66,7 @@ class _AddBahanBakuScreenState extends State<AddBahanBakuScreen> {
         );
       }
     } finally {
+      // Hentikan loading state
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -95,7 +109,7 @@ class _AddBahanBakuScreenState extends State<AddBahanBakuScreen> {
                   prefixIcon: HeroIcon(HeroIcons.tag),
                 ),
                 validator: (value) =>
-                    value!.isEmpty ? 'Masukkan nama bahan baku' : null,
+                value!.isEmpty ? 'Masukkan nama bahan baku' : null,
               ),
               const SizedBox(height: 16),
 
@@ -110,8 +124,15 @@ class _AddBahanBakuScreenState extends State<AddBahanBakuScreen> {
                   prefixText: 'Rp ',
                 ),
                 keyboardType: TextInputType.number,
-                validator: (value) =>
-                    value!.isEmpty ? 'Masukkan harga beli' : null,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Masukkan harga beli';
+                  }
+                  if (num.tryParse(value) == null) {
+                    return 'Masukkan angka yang valid';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
 
@@ -125,8 +146,15 @@ class _AddBahanBakuScreenState extends State<AddBahanBakuScreen> {
                   prefixIcon: HeroIcon(HeroIcons.archiveBox),
                 ),
                 keyboardType: TextInputType.number,
-                validator: (value) =>
-                    value!.isEmpty ? 'Masukkan jumlah ketersediaan' : null,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Masukkan jumlah ketersediaan';
+                  }
+                  if (num.tryParse(value) == null) {
+                    return 'Masukkan angka yang valid';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
 
@@ -140,9 +168,9 @@ class _AddBahanBakuScreenState extends State<AddBahanBakuScreen> {
                   prefixIcon: HeroIcon(HeroIcons.scale),
                 ),
                 validator: (value) =>
-                    value!.isEmpty ? 'Masukkan satuan' : null,
+                value!.isEmpty ? 'Masukkan satuan' : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
               // Submit Button
               ElevatedButton(
@@ -155,21 +183,21 @@ class _AddBahanBakuScreenState extends State<AddBahanBakuScreen> {
                 ),
                 child: _isLoading
                     ? const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 3,
-                        ),
-                      )
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 3,
+                  ),
+                )
                     : const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          HeroIcon(HeroIcons.document, size: 20),
-                          SizedBox(width: 8),
-                          Text('Simpan Data'),
-                        ],
-                      ),
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    HeroIcon(HeroIcons.documentCheck, size: 20),
+                    SizedBox(width: 8),
+                    Text('Simpan Data'),
+                  ],
+                ),
               ),
             ],
           ),
