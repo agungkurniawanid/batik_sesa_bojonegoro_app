@@ -1,32 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:heroicons/heroicons.dart';
 
-class AddKainScreen extends StatefulWidget {
+import '../../core/model/kain_model.dart';
+import '../../core/provider/kain_provider.dart';
+import 'daftar_kain_screens.dart';
+
+
+
+class AddKainScreen extends ConsumerStatefulWidget {
   const AddKainScreen({super.key});
 
   @override
-  State<AddKainScreen> createState() => _AddKainScreenState();
+  ConsumerState<AddKainScreen> createState() => _AddKainScreenState();
 }
 
-class _AddKainScreenState extends State<AddKainScreen> {
+class _AddKainScreenState extends ConsumerState<AddKainScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _namaController = TextEditingController();
-  final TextEditingController _lebarController = TextEditingController();
-  final TextEditingController _finishController = TextEditingController();
-  final TextEditingController _hargaController = TextEditingController();
-  final TextEditingController _satuanController = TextEditingController();
-  final TextEditingController _motifController = TextEditingController();
-  final TextEditingController _hargaRollController = TextEditingController();
-  final TextEditingController _hargaEcerController = TextEditingController();
+  final _namaController = TextEditingController();
+  final _lebarController = TextEditingController();
+  final _finishController = TextEditingController();
+  final _hargaController = TextEditingController();
+  final _satuanController = TextEditingController();
+  final _motifController = TextEditingController();
+  final _hargaRollController = TextEditingController();
+  final _hargaEcerController = TextEditingController();
 
   String _selectedKategori = 'Katun';
   bool _isLoading = false;
 
   final List<String> _kategoriList = [
     'Katun',
-    'Rayon',
     'Sutra',
-    'Doby Katun Viscose',
+    'Dobby',
+    'Rayon',
   ];
 
   Future<void> _submitForm() async {
@@ -37,41 +44,40 @@ class _AddKainScreenState extends State<AddKainScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final kainBaru = {
-        'nama': _namaController.text.trim(),
-        'kategori': _selectedKategori,
-        'lebar': _lebarController.text.trim(),
-        'finish': _finishController.text.trim(),
-        'harga': _hargaController.text.trim(),
-        'satuan': _satuanController.text.trim(),
-        'motif': _selectedKategori == 'Doby Katun Viscose'
+      // Membuat instance Kain dari data form
+      final kainBaru = Kain(
+        id: '', // ID akan dibuat oleh Firebase
+        nama: _namaController.text.trim(),
+        kategori: _selectedKategori,
+        lebar: _lebarController.text.trim(),
+        satuan: _satuanController.text.trim(),
+        finish: _finishController.text.trim().isNotEmpty
+            ? _finishController.text.trim()
+            : null,
+        motif: _selectedKategori == 'Dobby'
             ? _motifController.text.trim()
             : null,
-        'hargaRoll':
-            _selectedKategori == 'Sutra' ? _hargaRollController.text.trim() : null,
-        'hargaEcer':
-            _selectedKategori == 'Sutra' ? _hargaEcerController.text.trim() : null,
-      };
+        harga: _selectedKategori != 'Sutra'
+            ? num.tryParse(_hargaController.text)
+            : null,
+        hargaRoll: _selectedKategori == 'Sutra'
+            ? num.tryParse(_hargaRollController.text)
+            : null,
+        hargaEcer: _selectedKategori == 'Sutra'
+            ? num.tryParse(_hargaEcerController.text)
+            : null,
+      );
 
-      print('Data Kain Ditambahkan: $kainBaru');
+      // Mengirim data ke repository
+      await ref.read(kainRepositoryProvider).addKain(kainBaru);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Kain berhasil ditambahkan'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        showSnackbar(context, 'Kain berhasil ditambahkan', isError: false);
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal menambahkan kain: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        showSnackbar(context, 'Gagal menambahkan kain: ${e.toString()}');
       }
     } finally {
       if (mounted) {
@@ -143,7 +149,7 @@ class _AddKainScreenState extends State<AddKainScreen> {
                   prefixIcon: HeroIcon(HeroIcons.swatch),
                 ),
                 validator: (value) =>
-                    value!.isEmpty ? 'Masukkan nama kain' : null,
+                value!.isEmpty ? 'Masukkan nama kain' : null,
               ),
               const SizedBox(height: 16),
 
@@ -157,16 +163,16 @@ class _AddKainScreenState extends State<AddKainScreen> {
                   prefixIcon: HeroIcon(HeroIcons.arrowsPointingOut),
                 ),
                 validator: (value) =>
-                    value!.isEmpty ? 'Masukkan lebar kain' : null,
+                value!.isEmpty ? 'Masukkan lebar kain' : null,
               ),
               const SizedBox(height: 16),
 
-              // Finish
+              // Finish (tidak wajib diisi)
               TextFormField(
                 controller: _finishController,
                 decoration: const InputDecoration(
-                  labelText: 'Finish',
-                  hintText: 'Contoh: BMS, Bleaching, -',
+                  labelText: 'Finish (Opsional)',
+                  hintText: 'Contoh: BMS, Bleaching',
                   border: OutlineInputBorder(),
                   prefixIcon: HeroIcon(HeroIcons.sparkles),
                 ),
@@ -183,11 +189,13 @@ class _AddKainScreenState extends State<AddKainScreen> {
                   prefixIcon: HeroIcon(HeroIcons.scale),
                 ),
                 validator: (value) =>
-                    value!.isEmpty ? 'Masukkan satuan kain' : null,
+                value!.isEmpty ? 'Masukkan satuan kain' : null,
               ),
               const SizedBox(height: 16),
 
-              // Conditional Fields
+              // --- Conditional Fields ---
+
+              // Fields untuk Sutra
               if (_selectedKategori == 'Sutra') ...[
                 TextFormField(
                   controller: _hargaRollController,
@@ -200,7 +208,7 @@ class _AddKainScreenState extends State<AddKainScreen> {
                   ),
                   keyboardType: TextInputType.number,
                   validator: (value) =>
-                      value!.isEmpty ? 'Masukkan harga roll' : null,
+                  value!.isEmpty ? 'Masukkan harga roll' : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -214,27 +222,26 @@ class _AddKainScreenState extends State<AddKainScreen> {
                   ),
                   keyboardType: TextInputType.number,
                   validator: (value) =>
-                      value!.isEmpty ? 'Masukkan harga ecer' : null,
+                  value!.isEmpty ? 'Masukkan harga ecer' : null,
                 ),
                 const SizedBox(height: 16),
-              ] else ...[
+              ]
+              // Fields untuk Dobby
+              else if (_selectedKategori == 'Dobby') ...[
                 TextFormField(
                   controller: _hargaController,
                   decoration: const InputDecoration(
                     labelText: 'Harga',
-                    hintText: 'Contoh: 10500',
+                    hintText: 'Contoh: 16000',
                     border: OutlineInputBorder(),
                     prefixIcon: HeroIcon(HeroIcons.currencyDollar),
                     prefixText: 'Rp ',
                   ),
                   keyboardType: TextInputType.number,
                   validator: (value) =>
-                      value!.isEmpty ? 'Masukkan harga kain' : null,
+                  value!.isEmpty ? 'Masukkan harga kain' : null,
                 ),
                 const SizedBox(height: 16),
-              ],
-
-              if (_selectedKategori == 'Doby Katun Viscose') ...[
                 TextFormField(
                   controller: _motifController,
                   decoration: const InputDecoration(
@@ -243,9 +250,28 @@ class _AddKainScreenState extends State<AddKainScreen> {
                     border: OutlineInputBorder(),
                     prefixIcon: HeroIcon(HeroIcons.squares2x2),
                   ),
+                  validator: (value) =>
+                  value!.isEmpty ? 'Masukkan motif kain' : null,
                 ),
                 const SizedBox(height: 16),
-              ],
+              ]
+              // Fields untuk Kategori lain (Katun, Rayon)
+              else ...[
+                  TextFormField(
+                    controller: _hargaController,
+                    decoration: const InputDecoration(
+                      labelText: 'Harga',
+                      hintText: 'Contoh: 10500',
+                      border: OutlineInputBorder(),
+                      prefixIcon: HeroIcon(HeroIcons.currencyDollar),
+                      prefixText: 'Rp ',
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (value) =>
+                    value!.isEmpty ? 'Masukkan harga kain' : null,
+                  ),
+                  const SizedBox(height: 16),
+                ],
 
               // Submit Button
               ElevatedButton(
@@ -258,21 +284,21 @@ class _AddKainScreenState extends State<AddKainScreen> {
                 ),
                 child: _isLoading
                     ? const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 3,
-                        ),
-                      )
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 3,
+                  ),
+                )
                     : const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          HeroIcon(HeroIcons.document, size: 20),
-                          SizedBox(width: 8),
-                          Text('Simpan Data'),
-                        ],
-                      ),
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    HeroIcon(HeroIcons.documentPlus, size: 20),
+                    SizedBox(width: 8),
+                    Text('Simpan Data'),
+                  ],
+                ),
               ),
             ],
           ),
