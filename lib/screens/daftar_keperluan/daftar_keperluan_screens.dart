@@ -239,7 +239,7 @@ class DaftarKeperluanScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             filteredItems.isEmpty
-                ? _buildEmptyDataCard(context, category)
+                ? _buildEmptyDataInfoCard(context, category)
                 : ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -262,13 +262,13 @@ class DaftarKeperluanScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyDataCard(BuildContext context, String category) {
+  Widget _buildEmptyDataInfoCard(BuildContext context, String category) {
     return Card(
-      color: Colors.orange[50],
+      color: Colors.blue[50],
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: Colors.orange[200]!,
+          color: Colors.blue[100]!,
           width: 1,
         ),
       ),
@@ -280,13 +280,13 @@ class DaftarKeperluanScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.orange[100],
+                color: Colors.blue[100],
                 shape: BoxShape.circle,
               ),
               child: const HeroIcon(
-                HeroIcons.exclamationTriangle,
+                HeroIcons.informationCircle,
                 size: 20,
-                color: Colors.orange,
+                color: Colors.blue,
               ),
             ),
             const SizedBox(width: 12),
@@ -295,19 +295,19 @@ class DaftarKeperluanScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Data Kosong',
+                    'Belum Ada Data',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Colors.orange[800],
+                      color: Colors.blue[800],
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Tidak ada data untuk kategori $category',
+                    'Data untuk kategori $category akan muncul di sini',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.orange[700],
+                      color: Colors.blue[700],
                     ),
                   ),
                 ],
