@@ -4,7 +4,6 @@ import 'package:heroicons/heroicons.dart';
 import 'package:intl/intl.dart';
 import '../../core/model/gaji_karyawan_model.dart';
 import '../../core/provider/gaji_karyawan_provider.dart';
-import '../daftar_kain/daftar_kain_screens.dart';
 import 'add_gaji_screens.dart';
 import 'add_karyawan_screens.dart';
 import 'edit_gaji_screens.dart';
@@ -84,13 +83,6 @@ class _KaryawanScreenState extends ConsumerState<KaryawanScreen> {
                 },
               ),
               const SizedBox(height: 24),
-              // ElevatedButton(
-              //   onPressed: () => Navigator.pop(context),
-              //   style: ElevatedButton.styleFrom(
-              //     padding: const EdgeInsets.symmetric(vertical: 16),
-              //   ),
-              //   child: const Text('Terapkan Filter'),
-              // ),
             ],
           ),
         );
@@ -100,11 +92,8 @@ class _KaryawanScreenState extends ConsumerState<KaryawanScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Watch provider utama untuk state loading/error
     final karyawanListAsync = ref.watch(karyawanListStreamProvider);
     final gajiListAsync = ref.watch(gajiListStreamProvider);
-
-    // Watch provider yang sudah difilter untuk ditampilkan di list
     final filteredKaryawan = ref.watch(filteredKaryawanListProvider);
 
     return Scaffold(
@@ -135,10 +124,24 @@ class _KaryawanScreenState extends ConsumerState<KaryawanScreen> {
               const SizedBox(height: 16),
               karyawanListAsync.when(
                 data: (karyawanList) => karyawanList.isEmpty
-                    ? const _EmptyState(message: 'Belum ada data karyawan.')
+                    ? _buildEmptyDataInfoCard(
+                        context: context,
+                        title: 'Belum Ada Data Karyawan',
+                        message: 'Tambahkan karyawan pertama Anda untuk memulai',
+                        icon: HeroIcons.user,
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const AddKaryawanScreen()),
+                        ),
+                      )
                     : (filteredKaryawan.isEmpty
-                    ? const _EmptyState(message: 'Karyawan tidak ditemukan.')
-                    : _buildKaryawanListView(filteredKaryawan)),
+                        ? _buildEmptyDataInfoCard(
+                            context: context,
+                            title: 'Karyawan Tidak Ditemukan',
+                            message: 'Coba gunakan kata kunci lain atau filter yang berbeda',
+                            icon: HeroIcons.magnifyingGlass,
+                          )
+                        : _buildKaryawanListView(filteredKaryawan)),
                 loading: () => const _LoadingState(),
                 error: (err, _) => _ErrorState(message: err.toString()),
               ),
@@ -153,13 +156,105 @@ class _KaryawanScreenState extends ConsumerState<KaryawanScreen> {
               const SizedBox(height: 16),
               gajiListAsync.when(
                 data: (gajiList) => gajiList.isEmpty
-                    ? const _EmptyState(message: 'Belum ada data gaji.')
+                    ? _buildEmptyDataInfoCard(
+                        context: context,
+                        title: 'Belum Ada Data Gaji',
+                        message: 'Tambahkan data gaji pertama Anda untuk memulai',
+                        icon: HeroIcons.currencyDollar,
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const AddGajiScreen()),
+                        ),
+                      )
                     : _buildGajiListView(gajiList, karyawanListAsync.asData?.value ?? []),
                 loading: () => const _LoadingState(),
                 error: (err, _) => _ErrorState(message: err.toString()),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyDataInfoCard({
+    required BuildContext context,
+    required String title,
+    required String message,
+    required HeroIcons icon,
+    VoidCallback? onPressed,
+  }) {
+    return Card(
+      color: Colors.blue[50],
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: Colors.blue[100]!,
+          width: 1,
+        ),
+      ),
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue[100],
+                shape: BoxShape.circle,
+              ),
+              child: HeroIcon(
+                icon,
+                size: 28,
+                color: Colors.blue,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.blue[800],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.blue[700],
+              ),
+            ),
+            if (onPressed != null) ...[
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: onPressed,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    HeroIcon(HeroIcons.plus, size: 16),
+                    SizedBox(width: 8),
+                    Text('Tambah Data'),
+                  ],
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -259,8 +354,7 @@ class _KaryawanScreenState extends ConsumerState<KaryawanScreen> {
     );
   }
 
-  Widget _buildKaryawanCard(
-      BuildContext context, WidgetRef ref, Karyawan karyawan) {
+  Widget _buildKaryawanCard(BuildContext context, WidgetRef ref, Karyawan karyawan) {
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -447,8 +541,16 @@ class _KaryawanScreenState extends ConsumerState<KaryawanScreen> {
       },
     );
   }
-}
 
+  void showSnackbar(BuildContext context, String message, {bool isError = true}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+      ),
+    );
+  }
+}
 
 class _LoadingState extends StatelessWidget {
   const _LoadingState();
@@ -471,19 +573,6 @@ class _ErrorState extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Text('Terjadi error: $message'),
-        ));
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.message});
-  final String message;
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text(message),
         ));
   }
 }
