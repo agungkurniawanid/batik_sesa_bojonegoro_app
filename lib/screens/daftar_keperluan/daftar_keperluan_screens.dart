@@ -209,13 +209,9 @@ class DaftarKeperluanScreen extends ConsumerWidget {
       data: (items) {
         List filteredItems = [];
         if (type == 'BahanBakuTradisional') {
-          filteredItems = items
-              .where((item) => item.kategori == category)
-              .toList();
+          filteredItems = items.where((item) => item.kategori == category).toList();
         } else {
-          filteredItems = items
-              .where((item) => item.kategori == category)
-              .toList();
+          filteredItems = items.where((item) => item.kategori == category).toList();
         }
 
         return Column(
@@ -243,25 +239,15 @@ class DaftarKeperluanScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             filteredItems.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Text(
-                      'Belum ada data',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  )
+                ? _buildEmptyDataCard(context, category)
                 : ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: filteredItems.length > 3
-                        ? 3
-                        : filteredItems.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 8),
+                    itemCount: filteredItems.length > 3 ? 3 : filteredItems.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       if (type == 'BahanBakuTradisional') {
-                        final item =
-                            filteredItems[index] as BahanBakuTradisional;
+                        final item = filteredItems[index] as BahanBakuTradisional;
                         return _buildBahanBakuTradisionalItem(context, item);
                       } else {
                         final item = filteredItems[index] as PewarnaBatikModern;
@@ -273,6 +259,63 @@ class DaftarKeperluanScreen extends ConsumerWidget {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildEmptyDataCard(BuildContext context, String category) {
+    return Card(
+      color: Colors.orange[50],
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: Colors.orange[200]!,
+          width: 1,
+        ),
+      ),
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.orange[100],
+                shape: BoxShape.circle,
+              ),
+              child: const HeroIcon(
+                HeroIcons.exclamationTriangle,
+                size: 20,
+                color: Colors.orange,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Data Kosong',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.orange[800],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Tidak ada data untuk kategori $category',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.orange[700],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
