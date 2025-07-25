@@ -1,30 +1,53 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:heroicons/heroicons.dart';
-import 'karyawan_screens.dart';
 
-class EditKaryawanScreen extends StatefulWidget {
+import '../../core/model/gaji_karyawan_model.dart';
+import '../../core/provider/gaji_karyawan_provider.dart';
+import '../daftar_kain/daftar_kain_screens.dart';
+
+
+class EditKaryawanScreen extends ConsumerStatefulWidget {
   final Karyawan karyawan;
 
   const EditKaryawanScreen({super.key, required this.karyawan});
 
   @override
-  State<EditKaryawanScreen> createState() => _EditKaryawanScreenState();
+  ConsumerState<EditKaryawanScreen> createState() => _EditKaryawanScreenState();
 }
 
-class _EditKaryawanScreenState extends State<EditKaryawanScreen> {
+class _EditKaryawanScreenState extends ConsumerState<EditKaryawanScreen> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _namaController;
-  late TextEditingController _alamatController;
-  late TextEditingController _statusController;
+  late final TextEditingController _namaController;
+  late final TextEditingController _alamatController;
+  late final TextEditingController _nomorTeleponController; // Controller baru
 
+  String? _selectedStatus;
   bool _isLoading = false;
+
+  final List<String> _statusList = [
+    'Karyawan Tetap',
+    'Karyawan Kontrak',
+    'Freelance',
+  ];
 
   @override
   void initState() {
     super.initState();
+    // Inisialisasi state dan controller dari data karyawan yang ada
     _namaController = TextEditingController(text: widget.karyawan.nama);
     _alamatController = TextEditingController(text: widget.karyawan.alamat);
-    _statusController = TextEditingController(text: widget.karyawan.status);
+    _nomorTeleponController =
+        TextEditingController(text: widget.karyawan.nomorTelepon); // Inisialisasi controller baru
+    _selectedStatus = widget.karyawan.status;
+  }
+
+  @override
+  void dispose() {
+    _namaController.dispose();
+    _alamatController.dispose();
+    _nomorTeleponController.dispose(); // Dispose controller baru
+    super.dispose();
   }
 
   Future<void> _submitForm() async {
@@ -35,45 +58,30 @@ class _EditKaryawanScreenState extends State<EditKaryawanScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final karyawanUpdate = {
-        'nama': _namaController.text.trim(),
-        'alamat': _alamatController.text.trim(),
-        'status': _statusController.text.trim(),
-      };
+      final karyawanUpdate = Karyawan(
+        id: widget.karyawan.id, // Gunakan ID yang sama untuk update
+        nama: _namaController.text.trim(),
+        alamat: _alamatController.text.trim(),
+        status: _selectedStatus!,
+        nomorTelepon: _nomorTeleponController.text.trim(), // Tambahkan nomor telepon
+      );
 
-      print('Data Karyawan Diupdate: $karyawanUpdate');
+      await ref.read(karyawanRepositoryProvider).update(karyawanUpdate);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Karyawan berhasil diupdate'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        showSnackbar(context, 'Data karyawan berhasil diperbarui.',
+            isError: false);
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal mengupdate karyawan: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        showSnackbar(context, 'Gagal memperbarui data karyawan: $e');
       }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
-  }
-
-  @override
-  void dispose() {
-    _namaController.dispose();
-    _alamatController.dispose();
-    _statusController.dispose();
-    super.dispose();
   }
 
   @override
@@ -103,7 +111,7 @@ class _EditKaryawanScreenState extends State<EditKaryawanScreen> {
                   prefixIcon: HeroIcon(HeroIcons.user),
                 ),
                 validator: (value) =>
-                    value!.isEmpty ? 'Masukkan nama karyawan' : null,
+                value!.isEmpty ? 'Masukkan nama karyawan' : null,
               ),
               const SizedBox(height: 16),
 
@@ -115,40 +123,47 @@ class _EditKaryawanScreenState extends State<EditKaryawanScreen> {
                   border: OutlineInputBorder(),
                   prefixIcon: HeroIcon(HeroIcons.mapPin),
                 ),
-                validator: (value) =>
-                    value!.isEmpty ? 'Masukkan alamat' : null,
+                validator: (value) => value!.isEmpty ? 'Masukkan alamat' : null,
               ),
               const SizedBox(height: 16),
 
-              // Status
+              // Nomor Telepon (Field Baru)
+              TextFormField(
+                controller: _nomorTeleponController,
+                decoration: const InputDecoration(
+                  labelText: 'Nomor Telepon',
+                  border: OutlineInputBorder(),
+                  prefixIcon: HeroIcon(HeroIcons.phone),
+                ),
+                keyboardType: TextInputType.phone,
+                validator: (value) =>
+                value!.isEmpty ? 'Masukkan nomor telepon' : null,
+              ),
+              const SizedBox(height: 16),
+
+              // Status Dropdown
               DropdownButtonFormField<String>(
-                value: widget.karyawan.status,
+                value: _selectedStatus,
                 decoration: const InputDecoration(
                   labelText: 'Status Karyawan',
                   border: OutlineInputBorder(),
                   prefixIcon: HeroIcon(HeroIcons.shieldCheck),
                 ),
-                items: const [
-                  DropdownMenuItem(
-                    value: 'Karyawan Tetap',
-                    child: Text('Karyawan Tetap'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Karyawan Kontrak',
-                    child: Text('Karyawan Kontrak'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Freelance',
-                    child: Text('Freelance'),
-                  ),
-                ],
+                items: _statusList.map((status) {
+                  return DropdownMenuItem(
+                    value: status,
+                    child: Text(status),
+                  );
+                }).toList(),
                 onChanged: (value) {
-                  _statusController.text = value!;
+                  setState(() {
+                    _selectedStatus = value;
+                  });
                 },
                 validator: (value) =>
-                    value == null ? 'Pilih status karyawan' : null,
+                value == null ? 'Pilih status karyawan' : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
               // Submit Button
               ElevatedButton(
@@ -161,21 +176,21 @@ class _EditKaryawanScreenState extends State<EditKaryawanScreen> {
                 ),
                 child: _isLoading
                     ? const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 3,
-                        ),
-                      )
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 3,
+                  ),
+                )
                     : const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          HeroIcon(HeroIcons.document, size: 20),
-                          SizedBox(width: 8),
-                          Text('Update Data'),
-                        ],
-                      ),
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    HeroIcon(HeroIcons.documentCheck, size: 20),
+                    SizedBox(width: 8),
+                    Text('Update Data'),
+                  ],
+                ),
               ),
             ],
           ),

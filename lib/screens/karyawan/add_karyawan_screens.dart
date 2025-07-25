@@ -1,20 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:heroicons/heroicons.dart';
 
-class AddKaryawanScreen extends StatefulWidget {
+import '../../core/model/gaji_karyawan_model.dart';
+import '../../core/provider/gaji_karyawan_provider.dart';
+import '../daftar_kain/daftar_kain_screens.dart';
+
+
+class AddKaryawanScreen extends ConsumerStatefulWidget {
   const AddKaryawanScreen({super.key});
 
   @override
-  State<AddKaryawanScreen> createState() => _AddKaryawanScreenState();
+  ConsumerState<AddKaryawanScreen> createState() => _AddKaryawanScreenState();
 }
 
-class _AddKaryawanScreenState extends State<AddKaryawanScreen> {
+class _AddKaryawanScreenState extends ConsumerState<AddKaryawanScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _namaController = TextEditingController();
-  final TextEditingController _alamatController = TextEditingController();
-  final TextEditingController _statusController = TextEditingController();
+  final _namaController = TextEditingController();
+  final _alamatController = TextEditingController();
+  final _nomorTeleponController = TextEditingController(); // Controller baru
 
+  String? _selectedStatus;
   bool _isLoading = false;
+
+  final List<String> _statusList = [
+    'Karyawan Tetap',
+    'Karyawan Kontrak',
+    'Freelance',
+  ];
+
+  @override
+  void dispose() {
+    _namaController.dispose();
+    _alamatController.dispose();
+    _nomorTeleponController.dispose(); // Dispose controller baru
+    super.dispose();
+  }
 
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) {
@@ -24,45 +45,29 @@ class _AddKaryawanScreenState extends State<AddKaryawanScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final karyawanBaru = {
-        'nama': _namaController.text.trim(),
-        'alamat': _alamatController.text.trim(),
-        'status': _statusController.text.trim(),
-      };
+      final karyawanBaru = Karyawan(
+        id: '', // ID akan digenerate oleh Firebase
+        nama: _namaController.text.trim(),
+        alamat: _alamatController.text.trim(),
+        status: _selectedStatus!,
+        nomorTelepon: _nomorTeleponController.text.trim(), // Tambahkan nomor telepon
+      );
 
-      print('Data Karyawan Ditambahkan: $karyawanBaru');
+      await ref.read(karyawanRepositoryProvider).add(karyawanBaru);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Karyawan berhasil ditambahkan'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        showSnackbar(context, 'Karyawan berhasil ditambahkan.', isError: false);
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal menambahkan karyawan: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        showSnackbar(context, 'Gagal menambahkan karyawan: $e');
       }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
-  }
-
-  @override
-  void dispose() {
-    _namaController.dispose();
-    _alamatController.dispose();
-    _statusController.dispose();
-    super.dispose();
   }
 
   @override
@@ -92,7 +97,7 @@ class _AddKaryawanScreenState extends State<AddKaryawanScreen> {
                   prefixIcon: HeroIcon(HeroIcons.user),
                 ),
                 validator: (value) =>
-                    value!.isEmpty ? 'Masukkan nama karyawan' : null,
+                value!.isEmpty ? 'Masukkan nama karyawan' : null,
               ),
               const SizedBox(height: 16),
 
@@ -104,39 +109,48 @@ class _AddKaryawanScreenState extends State<AddKaryawanScreen> {
                   border: OutlineInputBorder(),
                   prefixIcon: HeroIcon(HeroIcons.mapPin),
                 ),
-                validator: (value) =>
-                    value!.isEmpty ? 'Masukkan alamat' : null,
+                validator: (value) => value!.isEmpty ? 'Masukkan alamat' : null,
               ),
               const SizedBox(height: 16),
 
-              // Status
+              // Nomor Telepon (Field Baru)
+              TextFormField(
+                controller: _nomorTeleponController,
+                decoration: const InputDecoration(
+                  labelText: 'Nomor Telepon',
+                  border: OutlineInputBorder(),
+                  prefixIcon: HeroIcon(HeroIcons.phone),
+                ),
+                keyboardType: TextInputType.phone,
+                validator: (value) =>
+                value!.isEmpty ? 'Masukkan nomor telepon' : null,
+              ),
+              const SizedBox(height: 16),
+
+              // Status Dropdown
               DropdownButtonFormField<String>(
+                value: _selectedStatus,
+                hint: const Text('Pilih Status'),
                 decoration: const InputDecoration(
                   labelText: 'Status Karyawan',
                   border: OutlineInputBorder(),
                   prefixIcon: HeroIcon(HeroIcons.shieldCheck),
                 ),
-                items: const [
-                  DropdownMenuItem(
-                    value: 'Karyawan Tetap',
-                    child: Text('Karyawan Tetap'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Karyawan Kontrak',
-                    child: Text('Karyawan Kontrak'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Freelance',
-                    child: Text('Freelance'),
-                  ),
-                ],
+                items: _statusList.map((status) {
+                  return DropdownMenuItem(
+                    value: status,
+                    child: Text(status),
+                  );
+                }).toList(),
                 onChanged: (value) {
-                  _statusController.text = value!;
+                  setState(() {
+                    _selectedStatus = value;
+                  });
                 },
                 validator: (value) =>
-                    value == null ? 'Pilih status karyawan' : null,
+                value == null ? 'Pilih status karyawan' : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
               // Submit Button
               ElevatedButton(
@@ -144,26 +158,23 @@ class _AddKaryawanScreenState extends State<AddKaryawanScreen> {
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                      borderRadius: BorderRadius.circular(10)),
                 ),
                 child: _isLoading
                     ? const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 3,
-                        ),
-                      )
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(
+                      color: Colors.white, strokeWidth: 3),
+                )
                     : const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          HeroIcon(HeroIcons.document, size: 20),
-                          SizedBox(width: 8),
-                          Text('Simpan Data'),
-                        ],
-                      ),
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    HeroIcon(HeroIcons.documentCheck, size: 20),
+                    SizedBox(width: 8),
+                    Text('Simpan Data'),
+                  ],
+                ),
               ),
             ],
           ),

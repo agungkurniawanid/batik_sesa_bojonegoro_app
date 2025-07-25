@@ -1,102 +1,118 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:heroicons/heroicons.dart';
-import 'add_karyawan_screens.dart';
+import 'package:intl/intl.dart';
+import '../../core/model/gaji_karyawan_model.dart';
+import '../../core/provider/gaji_karyawan_provider.dart';
+import '../daftar_kain/daftar_kain_screens.dart';
 import 'add_gaji_screens.dart';
-import 'edit_karyawan_screens.dart';
+import 'add_karyawan_screens.dart';
 import 'edit_gaji_screens.dart';
+import 'edit_karyawan_screens.dart';
+import 'karyawan_detail_screen.dart';
 
-class Karyawan {
-  final String id;
-  final String nama;
-  final String alamat;
-  final String status;
-
-  Karyawan({
-    required this.id,
-    required this.nama,
-    required this.alamat,
-    required this.status,
-  });
-}
-
-class Gaji {
-  final String id;
-  final String karyawanId;
-  final String bulan;
-  final String tahun;
-  final int jumlahKain;
-  final int totalGaji;
-
-  Gaji({
-    required this.id,
-    required this.karyawanId,
-    required this.bulan,
-    required this.tahun,
-    required this.jumlahKain,
-    required this.totalGaji,
-  });
-}
-
-final List<Karyawan> daftarKaryawan = [
-  Karyawan(
-    id: '1',
-    nama: 'Rumini',
-    alamat: 'Jono RT.16',
-    status: 'Karyawan Tetap',
-  ),
-  Karyawan(
-    id: '2',
-    nama: 'Katiyem',
-    alamat: 'Jono RT.16',
-    status: 'Karyawan Tetap',
-  ),
-  Karyawan(id: '3', nama: 'Candra', alamat: 'Belun', status: 'Karyawan Tetap'),
-];
-
-final List<Gaji> daftarGaji = [
-  Gaji(
-    id: '1',
-    karyawanId: '1',
-    bulan: 'Januari',
-    tahun: '2023',
-    jumlahKain: 28,
-    totalGaji: 700000,
-  ),
-  Gaji(
-    id: '2',
-    karyawanId: '2',
-    bulan: 'Januari',
-    tahun: '2023',
-    jumlahKain: 30,
-    totalGaji: 750000,
-  ),
-  Gaji(
-    id: '3',
-    karyawanId: '3',
-    bulan: 'Januari',
-    tahun: '2023',
-    jumlahKain: 32,
-    totalGaji: 800000,
-  ),
-];
-
-class KaryawanScreen extends ConsumerWidget {
+class KaryawanScreen extends ConsumerStatefulWidget {
   const KaryawanScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<KaryawanScreen> createState() => _KaryawanScreenState();
+}
+
+class _KaryawanScreenState extends ConsumerState<KaryawanScreen> {
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+    _searchController.addListener(() {
+      ref.read(karyawanSearchQueryProvider.notifier).state = _searchController.text;
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _showStatusFilterBottomSheet() {
+    final statusList = ['Karyawan Tetap', 'Karyawan Kontrak', 'Freelance'];
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+              20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Filter Berdasarkan Status',
+                      style: Theme.of(context).textTheme.titleLarge),
+                  TextButton(
+                    onPressed: () {
+                      ref.read(karyawanStatusFilterProvider.notifier).state = null;
+                    },
+                    child: const Text('Reset'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              DropdownButtonFormField<String>(
+                value: ref.watch(karyawanStatusFilterProvider),
+                hint: const Text('Pilih Status Karyawan'),
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Status',
+                ),
+                items: statusList.map((status) {
+                  return DropdownMenuItem(
+                    value: status,
+                    child: Text(status),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  ref.read(karyawanStatusFilterProvider.notifier).state = value;
+                },
+              ),
+              const SizedBox(height: 24),
+              // ElevatedButton(
+              //   onPressed: () => Navigator.pop(context),
+              //   style: ElevatedButton.styleFrom(
+              //     padding: const EdgeInsets.symmetric(vertical: 16),
+              //   ),
+              //   child: const Text('Terapkan Filter'),
+              // ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Watch provider utama untuk state loading/error
+    final karyawanListAsync = ref.watch(karyawanListStreamProvider);
+    final gajiListAsync = ref.watch(gajiListStreamProvider);
+
+    // Watch provider yang sudah difilter untuk ditampilkan di list
+    final filteredKaryawan = ref.watch(filteredKaryawanListProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         title: const Text(
           'Data Karyawan',
-          style: TextStyle(
-            fontFamily: 'Sriwedari',
-            fontWeight: FontWeight.bold,
-            fontSize: 32,
-            color: Colors.blueAccent,
-          ),
+          style: TextStyle(fontFamily: 'Sriwedari', fontWeight: FontWeight.bold, fontSize: 32, color: Colors.blueAccent),
         ),
         centerTitle: true,
         elevation: 0,
@@ -106,129 +122,41 @@ class KaryawanScreen extends ConsumerWidget {
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Daftar Karyawan Section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Daftar Karyawan',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AddKaryawanScreen(),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        HeroIcon(HeroIcons.plus, size: 16, color: Colors.white),
-                        SizedBox(width: 4),
-                        Text('Tambah Karyawan'),
-                      ],
-                    ),
-                  ),
-                ],
+              // --- Bagian Daftar Karyawan ---
+              _buildSectionHeader(
+                context,
+                title: 'Daftar Karyawan',
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AddKaryawanScreen())),
               ),
               const SizedBox(height: 16),
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: daftarKaryawan.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final karyawan = daftarKaryawan[index];
-                  return _buildKaryawanCard(context, karyawan);
-                },
+              _buildKaryawanSearchBar(),
+              const SizedBox(height: 16),
+              karyawanListAsync.when(
+                data: (karyawanList) => karyawanList.isEmpty
+                    ? const _EmptyState(message: 'Belum ada data karyawan.')
+                    : (filteredKaryawan.isEmpty
+                    ? const _EmptyState(message: 'Karyawan tidak ditemukan.')
+                    : _buildKaryawanListView(filteredKaryawan)),
+                loading: () => const _LoadingState(),
+                error: (err, _) => _ErrorState(message: err.toString()),
               ),
               const SizedBox(height: 24),
 
-              // Daftar Gaji Section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Daftar Gaji',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AddGajiScreen(),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        HeroIcon(HeroIcons.plus, size: 16, color: Colors.white),
-                        SizedBox(width: 4),
-                        Text('Tambah Gaji'),
-                      ],
-                    ),
-                  ),
-                ],
+              // --- Bagian Daftar Gaji ---
+              _buildSectionHeader(
+                context,
+                title: 'Riwayat Gaji',
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AddGajiScreen())),
               ),
               const SizedBox(height: 16),
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: daftarGaji.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final gaji = daftarGaji[index];
-                  final karyawan = daftarKaryawan.firstWhere(
-                    (k) => k.id == gaji.karyawanId,
-                    orElse: () => Karyawan(
-                      id: '',
-                      nama: 'Unknown',
-                      alamat: '',
-                      status: '',
-                    ),
-                  );
-                  return _buildGajiCard(context, gaji, karyawan);
-                },
+              gajiListAsync.when(
+                data: (gajiList) => gajiList.isEmpty
+                    ? const _EmptyState(message: 'Belum ada data gaji.')
+                    : _buildGajiListView(gajiList, karyawanListAsync.asData?.value ?? []),
+                loading: () => const _LoadingState(),
+                error: (err, _) => _ErrorState(message: err.toString()),
               ),
             ],
           ),
@@ -237,274 +165,280 @@ class KaryawanScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildKaryawanCard(BuildContext context, Karyawan karyawan) {
+  Widget _buildKaryawanListView(List<Karyawan> karyawanList) {
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: karyawanList.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (_, index) {
+        final karyawan = karyawanList[index];
+        return _buildKaryawanCard(context, ref, karyawan);
+      },
+    );
+  }
+
+  Widget _buildKaryawanSearchBar() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const HeroIcon(
-                  HeroIcons.user,
-                  size: 20,
-                  color: Colors.blue,
-                ),
+          Expanded(
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.all(10),
+                hintText: 'Cari nama karyawan...',
+                border: InputBorder.none,
+                prefixIcon: const HeroIcon(HeroIcons.magnifyingGlass, size: 20),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                  icon: const HeroIcon(HeroIcons.xMark, size: 20),
+                  onPressed: () => _searchController.clear(),
+                )
+                    : null,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      karyawan.nama,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      karyawan.alamat,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.black54,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      karyawan.status,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.green.shade600,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              PopupMenuButton(
-                icon: const HeroIcon(HeroIcons.ellipsisVertical, size: 20),
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        HeroIcon(HeroIcons.pencil, size: 18),
-                        SizedBox(width: 8),
-                        Text('Edit'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        HeroIcon(HeroIcons.trash, size: 18, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Hapus', style: TextStyle(color: Colors.red)),
-                      ],
-                    ),
-                  ),
-                ],
-                onSelected: (value) {
-                  if (value == 'edit') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            EditKaryawanScreen(karyawan: karyawan),
-                      ),
-                    );
-                  } else if (value == 'delete') {
-                    _showDeleteKaryawanConfirmation(context, karyawan);
-                  }
-                },
-              ),
-            ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          InkWell(
+            onTap: _showStatusFilterBottomSheet,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
+              child: const HeroIcon(HeroIcons.funnel, size: 20),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildGajiCard(BuildContext context, Gaji gaji, Karyawan karyawan) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const HeroIcon(
-                  HeroIcons.currencyDollar,
-                  size: 20,
-                  color: Colors.orange,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      karyawan.nama,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${gaji.bulan} ${gaji.tahun}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.black54,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              PopupMenuButton(
-                icon: const HeroIcon(HeroIcons.ellipsisVertical, size: 20),
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        HeroIcon(HeroIcons.pencil, size: 18),
-                        SizedBox(width: 8),
-                        Text('Edit'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        HeroIcon(HeroIcons.trash, size: 18, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('Hapus', style: TextStyle(color: Colors.red)),
-                      ],
-                    ),
-                  ),
-                ],
-                onSelected: (value) {
-                  if (value == 'edit') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => EditGajiScreen(gaji: gaji),
-                      ),
-                    );
-                  } else if (value == 'delete') {
-                    _showDeleteGajiConfirmation(context, gaji);
-                  }
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Divider(height: 1, color: Colors.grey, thickness: 0.3),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _gajiInfoItem('Jumlah Kain', '${gaji.jumlahKain} Lembar'),
-              _gajiInfoItem('Total Gaji', 'Rp ${gaji.totalGaji}'),
-            ],
-          ),
-        ],
-      ),
+  Widget _buildGajiListView(List<Gaji> gajiList, List<Karyawan> karyawanList) {
+    final karyawanMap = {for (var k in karyawanList) k.id: k.nama};
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: gajiList.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final gaji = gajiList[index];
+        final namaKaryawan = karyawanMap[gaji.karyawanId] ?? 'Karyawan Tidak Ditemukan';
+        return _buildGajiCard(context, ref, gaji, namaKaryawan);
+      },
     );
   }
 
-  Widget _gajiInfoItem(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildSectionHeader(BuildContext context, {required String title, required VoidCallback onPressed}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, color: Colors.black54),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Colors.black87,
+        Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
+        ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          child: const Row(
+            children: [
+              HeroIcon(HeroIcons.plus, size: 16),
+              SizedBox(width: 4),
+              Text('Tambah'),
+            ],
           ),
         ),
       ],
     );
   }
 
-  void _showDeleteKaryawanConfirmation(
-    BuildContext context,
-    Karyawan karyawan,
-  ) {
+  Widget _buildKaryawanCard(
+      BuildContext context, WidgetRef ref, Karyawan karyawan) {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => KaryawanDetailScreen(karyawan: karyawan),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 4))
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12)),
+              child:
+              const HeroIcon(HeroIcons.user, size: 20, color: Colors.blue),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(karyawan.nama,
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  Text(karyawan.alamat,
+                      style: const TextStyle(color: Colors.black54)),
+                  const SizedBox(height: 4),
+                  Text(karyawan.status,
+                      style: TextStyle(
+                          color: Colors.green.shade600,
+                          fontWeight: FontWeight.w500)),
+                ],
+              ),
+            ),
+            PopupMenuButton(
+              icon: const HeroIcon(HeroIcons.ellipsisVertical, size: 20),
+              itemBuilder: (context) => [
+                const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                const PopupMenuItem(
+                    value: 'delete',
+                    child: Text('Hapus', style: TextStyle(color: Colors.red))),
+              ],
+              onSelected: (value) {
+                if (value == 'edit') {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              EditKaryawanScreen(karyawan: karyawan)));
+                } else if (value == 'delete') {
+                  _showDeleteConfirmation(context, ref,
+                      isKaryawan: true, id: karyawan.id, nama: karyawan.nama);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGajiCard(BuildContext context, WidgetRef ref, Gaji gaji, String namaKaryawan) {
+    final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 4))],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(12)),
+                child: const HeroIcon(HeroIcons.currencyDollar, size: 20, color: Colors.orange),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(namaKaryawan, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    Text('${gaji.bulan} ${gaji.tahun}', style: const TextStyle(color: Colors.black54)),
+                  ],
+                ),
+              ),
+              PopupMenuButton(
+                icon: const HeroIcon(HeroIcons.ellipsisVertical, size: 20),
+                itemBuilder: (context) => [
+                  const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                  const PopupMenuItem(value: 'delete', child: Text('Hapus', style: TextStyle(color: Colors.red))),
+                ],
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => EditGajiScreen(gaji: gaji)));
+                  } else if (value == 'delete') {
+                    _showDeleteConfirmation(context, ref, isKaryawan: false, id: gaji.id, nama: 'data gaji untuk $namaKaryawan');
+                  }
+                },
+              ),
+            ],
+          ),
+          const Divider(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _infoItem('Jumlah Kain', '${gaji.jumlahKain} Lembar'),
+              _infoItem('Total Gaji', currencyFormatter.format(gaji.totalGaji)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoItem(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+        const SizedBox(height: 4),
+        Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+      ],
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context, WidgetRef ref, {required bool isKaryawan, required String id, required String nama}) {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Hapus Karyawan'),
-          content: Text('Anda yakin ingin menghapus ${karyawan.nama}?'),
+          title: Text('Hapus ${isKaryawan ? "Karyawan" : "Data Gaji"}'),
+          content: Text('Anda yakin ingin menghapus $nama?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text('Batal'),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade50,
-                foregroundColor: Colors.red,
-              ),
-              onPressed: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('${karyawan.nama} berhasil dihapus'),
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+              onPressed: () async {
+                try {
+                  if (isKaryawan) {
+                    await ref.read(karyawanRepositoryProvider).delete(id);
+                  } else {
+                    await ref.read(gajiRepositoryProvider).delete(id);
+                  }
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    showSnackbar(context, '$nama berhasil dihapus.', isError: false);
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    showSnackbar(context, 'Gagal menghapus: $e');
+                  }
+                }
               },
               child: const Text('Hapus'),
             ),
@@ -513,38 +447,43 @@ class KaryawanScreen extends ConsumerWidget {
       },
     );
   }
+}
 
-  void _showDeleteGajiConfirmation(BuildContext context, Gaji gaji) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Hapus Data Gaji'),
-          content: const Text('Anda yakin ingin menghapus data gaji ini?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade50,
-                foregroundColor: Colors.red,
-              ),
-              onPressed: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Data gaji berhasil dihapus'),
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-              },
-              child: const Text('Hapus'),
-            ),
-          ],
-        );
-      },
-    );
+
+class _LoadingState extends StatelessWidget {
+  const _LoadingState();
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: CircularProgressIndicator(),
+        ));
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.message});
+  final String message;
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text('Terjadi error: $message'),
+        ));
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.message});
+  final String message;
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(message),
+        ));
   }
 }

@@ -1,31 +1,57 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:heroicons/heroicons.dart';
-import 'karyawan_screens.dart';
 
-class AddGajiScreen extends StatefulWidget {
+import '../../core/model/gaji_karyawan_model.dart';
+import '../../core/provider/gaji_karyawan_provider.dart';
+import '../daftar_kain/daftar_kain_screens.dart';
+
+class AddGajiScreen extends ConsumerStatefulWidget {
   const AddGajiScreen({super.key});
 
   @override
-  State<AddGajiScreen> createState() => _AddGajiScreenState();
+  ConsumerState<AddGajiScreen> createState() => _AddGajiScreenState();
 }
 
-class _AddGajiScreenState extends State<AddGajiScreen> {
+class _AddGajiScreenState extends ConsumerState<AddGajiScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _karyawanController = TextEditingController();
-  final TextEditingController _bulanController = TextEditingController();
-  final TextEditingController _tahunController = TextEditingController();
-  final TextEditingController _jumlahKainController = TextEditingController();
-  final TextEditingController _totalGajiController = TextEditingController();
+  final _bulanController = TextEditingController();
+  final _tahunController = TextEditingController();
+  final _jumlahKainController = TextEditingController();
+  final _totalGajiController = TextEditingController();
 
-  bool _isLoading = false;
   String? _selectedKaryawanId;
+  bool _isLoading = false;
+
+  final List<String> _bulanList = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Inisialisasi tahun dengan tahun saat ini
+    _tahunController.text = DateTime.now().year.toString();
+    _jumlahKainController.addListener(_calculateGaji);
+  }
+
+  @override
+  void dispose() {
+    _bulanController.dispose();
+    _tahunController.dispose();
+    _jumlahKainController.dispose();
+    _totalGajiController.dispose();
+    super.dispose();
+  }
 
   void _calculateGaji() {
-    if (_jumlahKainController.text.isEmpty) return;
-    
+    if (_jumlahKainController.text.isEmpty) {
+      _totalGajiController.clear();
+      return;
+    }
     final jumlahKain = int.tryParse(_jumlahKainController.text) ?? 0;
-    final totalGaji = jumlahKain * 25000; // 25rb per lembar (colet + nembok)
-    
+    final totalGaji = jumlahKain * 25000; // Tarif: Rp 25.000 per lembar
     _totalGajiController.text = totalGaji.toString();
   }
 
@@ -33,37 +59,32 @@ class _AddGajiScreenState extends State<AddGajiScreen> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
+    if (_selectedKaryawanId == null) {
+      showSnackbar(context, 'Silakan pilih karyawan terlebih dahulu.');
+      return;
+    }
 
     setState(() => _isLoading = true);
 
     try {
-      final gajiBaru = {
-        'karyawanId': _selectedKaryawanId,
-        'bulan': _bulanController.text.trim(),
-        'tahun': _tahunController.text.trim(),
-        'jumlahKain': int.parse(_jumlahKainController.text.trim()),
-        'totalGaji': int.parse(_totalGajiController.text.trim()),
-      };
+      final gajiBaru = Gaji(
+        id: '', // ID akan digenerate oleh Firebase
+        karyawanId: _selectedKaryawanId!,
+        bulan: _bulanController.text,
+        tahun: _tahunController.text,
+        jumlahKain: int.parse(_jumlahKainController.text),
+        totalGaji: int.parse(_totalGajiController.text),
+      );
 
-      print('Data Gaji Ditambahkan: $gajiBaru');
+      await ref.read(gajiRepositoryProvider).add(gajiBaru);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Data gaji berhasil ditambahkan'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        showSnackbar(context, 'Data gaji berhasil ditambahkan.', isError: false);
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal menambahkan data gaji: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        showSnackbar(context, 'Gagal menambahkan data gaji: $e');
       }
     } finally {
       if (mounted) {
@@ -73,17 +94,10 @@ class _AddGajiScreenState extends State<AddGajiScreen> {
   }
 
   @override
-  void dispose() {
-    _karyawanController.dispose();
-    _bulanController.dispose();
-    _tahunController.dispose();
-    _jumlahKainController.dispose();
-    _totalGajiController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    // Watch provider karyawan untuk dropdown
+    final karyawanListAsync = ref.watch(karyawanListStreamProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tambah Data Gaji'),
@@ -101,35 +115,30 @@ class _AddGajiScreenState extends State<AddGajiScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Dropdown Karyawan
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: 'Pilih Karyawan',
-                  border: OutlineInputBorder(),
-                  prefixIcon: HeroIcon(HeroIcons.user),
-                ),
-                items: daftarKaryawan.map((karyawan) {
-                  return DropdownMenuItem(
-                    value: karyawan.id,
-                    child: Text(karyawan.nama),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedKaryawanId = value;
-                    final karyawan = daftarKaryawan.firstWhere(
-                      (k) => k.id == value,
-                      orElse: () => Karyawan(
-                        id: '',
-                        nama: '',
-                        alamat: '',
-                        status: '',
-                      ),
+              karyawanListAsync.when(
+                data: (karyawanList) => DropdownButtonFormField<String>(
+                  value: _selectedKaryawanId,
+                  hint: const Text('Pilih Karyawan'),
+                  decoration: const InputDecoration(
+                    labelText: 'Karyawan',
+                    border: OutlineInputBorder(),
+                    prefixIcon: HeroIcon(HeroIcons.user),
+                  ),
+                  items: karyawanList.map((karyawan) {
+                    return DropdownMenuItem(
+                      value: karyawan.id,
+                      child: Text(karyawan.nama),
                     );
-                    _karyawanController.text = karyawan.nama;
-                  });
-                },
-                validator: (value) =>
-                    value == null ? 'Pilih karyawan' : null,
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedKaryawanId = value;
+                    });
+                  },
+                  validator: (value) => value == null ? 'Pilih karyawan' : null,
+                ),
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, _) => Text('Error memuat karyawan: $err'),
               ),
               const SizedBox(height: 16),
 
@@ -140,25 +149,13 @@ class _AddGajiScreenState extends State<AddGajiScreen> {
                   border: OutlineInputBorder(),
                   prefixIcon: HeroIcon(HeroIcons.calendar),
                 ),
-                items: const [
-                  DropdownMenuItem(value: 'Januari', child: Text('Januari')),
-                  DropdownMenuItem(value: 'Februari', child: Text('Februari')),
-                  DropdownMenuItem(value: 'Maret', child: Text('Maret')),
-                  DropdownMenuItem(value: 'April', child: Text('April')),
-                  DropdownMenuItem(value: 'Mei', child: Text('Mei')),
-                  DropdownMenuItem(value: 'Juni', child: Text('Juni')),
-                  DropdownMenuItem(value: 'Juli', child: Text('Juli')),
-                  DropdownMenuItem(value: 'Agustus', child: Text('Agustus')),
-                  DropdownMenuItem(value: 'September', child: Text('September')),
-                  DropdownMenuItem(value: 'Oktober', child: Text('Oktober')),
-                  DropdownMenuItem(value: 'November', child: Text('November')),
-                  DropdownMenuItem(value: 'Desember', child: Text('Desember')),
-                ],
+                items: _bulanList.map((bulan) {
+                  return DropdownMenuItem(value: bulan, child: Text(bulan));
+                }).toList(),
                 onChanged: (value) {
-                  _bulanController.text = value!;
+                  if (value != null) _bulanController.text = value;
                 },
-                validator: (value) =>
-                    value == null ? 'Pilih bulan' : null,
+                validator: (value) => (value?.isEmpty ?? true) ? 'Pilih bulan' : null,
               ),
               const SizedBox(height: 16),
 
@@ -168,11 +165,10 @@ class _AddGajiScreenState extends State<AddGajiScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Tahun',
                   border: OutlineInputBorder(),
-                  prefixIcon: HeroIcon(HeroIcons.calendar),
+                  prefixIcon: HeroIcon(HeroIcons.calendarDays),
                 ),
                 keyboardType: TextInputType.number,
-                validator: (value) =>
-                    value!.isEmpty ? 'Masukkan tahun' : null,
+                validator: (value) => value!.isEmpty ? 'Masukkan tahun' : null,
               ),
               const SizedBox(height: 16),
 
@@ -183,12 +179,9 @@ class _AddGajiScreenState extends State<AddGajiScreen> {
                   labelText: 'Jumlah Kain (Lembar)',
                   border: OutlineInputBorder(),
                   prefixIcon: HeroIcon(HeroIcons.rectangleStack),
-                  suffixText: 'Lembar',
                 ),
                 keyboardType: TextInputType.number,
-                onChanged: (value) => _calculateGaji(),
-                validator: (value) =>
-                    value!.isEmpty ? 'Masukkan jumlah kain' : null,
+                validator: (value) => value!.isEmpty ? 'Masukkan jumlah kain' : null,
               ),
               const SizedBox(height: 16),
 
@@ -198,12 +191,12 @@ class _AddGajiScreenState extends State<AddGajiScreen> {
                 readOnly: true,
                 decoration: const InputDecoration(
                   labelText: 'Total Gaji',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+                  filled: true,
+                  fillColor: Color(0xFFF5F7FA),
                   prefixIcon: HeroIcon(HeroIcons.currencyDollar),
                   prefixText: 'Rp ',
                 ),
-                validator: (value) =>
-                    value!.isEmpty ? 'Total gaji harus dihitung' : null,
               ),
               const SizedBox(height: 16),
 
@@ -213,43 +206,37 @@ class _AddGajiScreenState extends State<AddGajiScreen> {
                 decoration: BoxDecoration(
                   color: Colors.blue.shade50,
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.shade100),
                 ),
                 child: const Text(
-                  'Tarif: Rp 10.000 (colet) + Rp 15.000 (nembok) = Rp 25.000 per lembar',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.blue,
-                  ),
+                  'Info: Tarif gaji adalah Rp 25.000 per lembar kain.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, color: Colors.blue),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
               // Submit Button
               ElevatedButton(
                 onPressed: _isLoading ? null : _submitForm,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 child: _isLoading
                     ? const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 3,
-                        ),
-                      )
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
+                )
                     : const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          HeroIcon(HeroIcons.document, size: 20),
-                          SizedBox(width: 8),
-                          Text('Simpan Data'),
-                        ],
-                      ),
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    HeroIcon(HeroIcons.documentCheck, size: 20),
+                    SizedBox(width: 8),
+                    Text('Simpan Data Gaji'),
+                  ],
+                ),
               ),
             ],
           ),
