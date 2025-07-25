@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:heroicons/heroicons.dart';
@@ -8,13 +7,11 @@ import '../../core/provider/bahanbaku_provider.dart';
 import 'add_bahan_baku_screens.dart';
 import 'edit_bahan_baku_screens.dart';
 
-
 class BahanBakuScreen extends ConsumerWidget {
   const BahanBakuScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 1. Mengawasi stream provider untuk mendapatkan data
     final bahanBakuListAsync = ref.watch(bahanBakuListStreamProvider);
 
     return Scaffold(
@@ -64,15 +61,13 @@ class BahanBakuScreen extends ConsumerWidget {
           ),
         ],
       ),
-      // 2. Menggunakan .when untuk handle state data, loading, dan error
       body: bahanBakuListAsync.when(
         data: (bahanBakuList) {
           if (bahanBakuList.isEmpty) {
-            return const Center(
-              child: Text(
-                'Belum ada bahan baku.\nSilakan tambahkan data baru.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.grey),
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: _buildEmptyDataInfoCard(context),
               ),
             );
           }
@@ -84,10 +79,9 @@ class BahanBakuScreen extends ConsumerWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: bahanBakuList.length,
                 separatorBuilder: (context, index) =>
-                const SizedBox(height: 12),
+                    const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final bahan = bahanBakuList[index];
-                  // 3. Pass `ref` ke card untuk aksi delete
                   return _buildBahanBakuCard(context, ref, bahan);
                 },
               ),
@@ -102,9 +96,94 @@ class BahanBakuScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildEmptyDataInfoCard(BuildContext context) {
+    return Card(
+      color: Colors.blue[50],
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: Colors.blue[100]!,
+          width: 1,
+        ),
+      ),
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue[100],
+                shape: BoxShape.circle,
+              ),
+              child: const HeroIcon(
+                HeroIcons.informationCircle,
+                size: 28,
+                color: Colors.blue,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Belum Ada Data Bahan Baku',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.blue[800],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Tambahkan bahan baku pertama Anda untuk memulai',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.blue[700],
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AddBahanBakuScreen(),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  HeroIcon(HeroIcons.plus, size: 16),
+                  SizedBox(width: 8),
+                  Text('Tambah Bahan Baku'),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildBahanBakuCard(BuildContext context, WidgetRef ref, BahanBaku bahan) {
-    // Format harga agar lebih mudah dibaca
-    final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    final currencyFormatter = NumberFormat.currency(
+      locale: 'id_ID', 
+      symbol: 'Rp ', 
+      decimalDigits: 0
+    );
     final hargaFormatted = currencyFormatter.format(bahan.hargaBeli);
 
     return Container(
@@ -245,7 +324,6 @@ class BahanBakuScreen extends ConsumerWidget {
                 foregroundColor: Colors.red,
               ),
               onPressed: () {
-                // 4. Memanggil repository untuk menghapus data
                 ref.read(bahanBakuRepositoryProvider).deleteBahanBaku(bahan.id)
                     .then((_) {
                   ScaffoldMessenger.of(context).showSnackBar(
