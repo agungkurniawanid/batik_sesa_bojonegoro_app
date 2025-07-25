@@ -15,7 +15,6 @@ class DaftarKainScreen extends ConsumerStatefulWidget {
 }
 
 class _DaftarKainScreenState extends ConsumerState<DaftarKainScreen> {
-
   final _searchController = TextEditingController();
 
   @override
@@ -41,7 +40,6 @@ class _DaftarKainScreenState extends ConsumerState<DaftarKainScreen> {
       builder: (_) => const _FilterBottomSheet(),
     );
   }
-
 
   Future<void> _checkAndSeedDatabase() async {
     final repository = ref.read(kainRepositoryProvider);
@@ -78,11 +76,91 @@ class _DaftarKainScreenState extends ConsumerState<DaftarKainScreen> {
     }
   }
 
+  Widget _buildEmptyDataInfoCard(BuildContext context) {
+    return Card(
+      color: Colors.blue[50],
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: Colors.blue[100]!,
+          width: 1,
+        ),
+      ),
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue[100],
+                shape: BoxShape.circle,
+              ),
+              child: const HeroIcon(
+                HeroIcons.informationCircle,
+                size: 28,
+                color: Colors.blue,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Belum Ada Data Kain',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.blue[800],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Tambahkan data kain pertama Anda untuk memulai',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.blue[700],
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AddKainScreen(),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  HeroIcon(HeroIcons.plus, size: 16),
+                  SizedBox(width: 8),
+                  Text('Tambah Kain'),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // UI sekarang mengawasi 'filteredKainListProvider'
     final filteredKainList = ref.watch(filteredKainListProvider);
-    // Kita juga tetap butuh stream provider untuk error dan loading state
     final kainListAsync = ref.watch(kainListStreamProvider);
 
     return Scaffold(
@@ -110,7 +188,15 @@ class _DaftarKainScreenState extends ConsumerState<DaftarKainScreen> {
         ],
       ),
       body: kainListAsync.when(
-        data: (_) { // Data diambil dari filteredKainList, ini hanya untuk state
+        data: (_) {
+          if (filteredKainList.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: _buildEmptyDataInfoCard(context),
+              ),
+            );
+          }
           return SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -118,19 +204,16 @@ class _DaftarKainScreenState extends ConsumerState<DaftarKainScreen> {
                 children: [
                   _buildSearchBar(),
                   const SizedBox(height: 16),
-                  if (filteredKainList.isEmpty)
-                    const Center(child: Text('Tidak ada kain yang cocok dengan filter.'))
-                  else
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: filteredKainList.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (_, index) {
-                        final kain = filteredKainList[index];
-                        return _buildKainCard(context, kain);
-                      },
-                    ),
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: filteredKainList.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (_, index) {
+                      final kain = filteredKainList[index];
+                      return _buildKainCard(context, kain);
+                    },
+                  ),
                 ],
               ),
             ),
@@ -141,8 +224,6 @@ class _DaftarKainScreenState extends ConsumerState<DaftarKainScreen> {
       ),
     );
   }
-
-  // --- Helper Widgets & Methods ---
 
   Widget _buildSearchBar() {
     return Container(
@@ -457,7 +538,6 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
   @override
   void initState() {
     super.initState();
-    // Ambil nilai filter saat ini dari provider untuk diisikan ke controller
     final currentWidthFilter = ref.read(kainWidthFilterProvider);
     _widthController = TextEditingController(text: currentWidthFilter);
 
@@ -476,12 +556,11 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
     ref.read(kainCategoryFilterProvider.notifier).state = null;
     ref.read(kainUnitFilterProvider.notifier).state = null;
     _widthController.clear();
-    Navigator.pop(context); // Tutup bottom sheet
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    // Awasi provider untuk memperbarui UI filter secara real-time
     final selectedCategory = ref.watch(kainCategoryFilterProvider);
     final selectedUnit = ref.watch(kainUnitFilterProvider);
 
@@ -500,7 +579,6 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
           ),
           const SizedBox(height: 20),
 
-          // Filter Kategori
           DropdownButtonFormField<String>(
             value: selectedCategory,
             hint: const Text('Semua Kategori'),
@@ -510,7 +588,6 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
           ),
           const SizedBox(height: 16),
 
-          // Filter Lebar
           TextFormField(
             controller: _widthController,
             decoration: const InputDecoration(
@@ -522,7 +599,6 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
           ),
           const SizedBox(height: 16),
 
-          // Filter Satuan
           DropdownButtonFormField<String>(
             value: selectedUnit,
             hint: const Text('Semua Satuan'),
@@ -531,11 +607,6 @@ class _FilterBottomSheetState extends ConsumerState<_FilterBottomSheet> {
             decoration: const InputDecoration(labelText: 'Satuan', border: OutlineInputBorder()),
           ),
           const SizedBox(height: 24),
-
-          // ElevatedButton(
-          //   onPressed: () => Navigator.pop(context),
-          //   child: const Text('Terapkan Filter'),
-          // ),
         ],
       ),
     );
