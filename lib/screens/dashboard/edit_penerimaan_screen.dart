@@ -1,39 +1,64 @@
+import 'package:batik_sesa_bojonegoro_app/core/model/penerimaan_model.dart';
+import 'package:batik_sesa_bojonegoro_app/core/provider/penerimaan_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:heroicons/heroicons.dart';
 import 'package:intl/intl.dart';
 
-class EditPenerimaanScreen extends StatefulWidget {
-  final Map<String, dynamic> penerimaan;
+class EditPenerimaanScreen extends ConsumerStatefulWidget {
+  final PenerimaanModel penerimaan;
 
   const EditPenerimaanScreen({super.key, required this.penerimaan});
 
   @override
-  State<EditPenerimaanScreen> createState() => _EditPenerimaanScreenState();
+  ConsumerState<EditPenerimaanScreen> createState() =>
+      _EditPenerimaanScreenState();
 }
 
-class _EditPenerimaanScreenState extends State<EditPenerimaanScreen> {
+class _EditPenerimaanScreenState extends ConsumerState<EditPenerimaanScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _tanggalController = TextEditingController();
-  final TextEditingController _transaksiController = TextEditingController();
-  final TextEditingController _pembeliController = TextEditingController();
-  final TextEditingController _quantityController = TextEditingController();
-  final TextEditingController _satuanController = TextEditingController();
-  final TextEditingController _hargaController = TextEditingController();
-  bool _isLoading = false;
+  late final TextEditingController _tanggalController;
+  late final TextEditingController _transaksiController;
+  late final TextEditingController _pembeliController;
+  late final TextEditingController _quantityController;
+  late final TextEditingController _satuanController;
+  late final TextEditingController _hargaController;
+  late final TextEditingController _keteranganController;
 
+  bool _isLoading = false;
   DateTime? _selectedDate;
 
   @override
   void initState() {
     super.initState();
-    // Initialize form with existing penerimaan data
-    _selectedDate = widget.penerimaan['tanggal'];
-    _tanggalController.text = DateFormat('dd MMM yyyy').format(_selectedDate!);
-    _transaksiController.text = widget.penerimaan['transaksi'];
-    _pembeliController.text = widget.penerimaan['pembeli'];
-    _quantityController.text = widget.penerimaan['quantity'].toString();
-    _satuanController.text = widget.penerimaan['satuan'];
-    _hargaController.text = widget.penerimaan['harga'].toString();
+
+    // Initialize controllers with existing penerimaan data
+    _selectedDate =
+        DateTime.tryParse(widget.penerimaan.tanggal) ?? DateTime.now();
+
+    _tanggalController = TextEditingController(
+      text: DateFormat('dd MMM yyyy').format(_selectedDate!),
+    );
+
+    _transaksiController = TextEditingController(
+      text: widget.penerimaan.transaksi,
+    );
+
+    _pembeliController = TextEditingController(text: widget.penerimaan.pembeli);
+
+    _quantityController = TextEditingController(
+      text: widget.penerimaan.kuantitas.toString(),
+    );
+
+    _satuanController = TextEditingController(text: widget.penerimaan.satuan);
+
+    _hargaController = TextEditingController(
+      text: widget.penerimaan.hargaSatuan.toString(),
+    );
+
+    _keteranganController = TextEditingController(
+      text: widget.penerimaan.keterangan ?? '',
+    );
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -43,6 +68,7 @@ class _EditPenerimaanScreenState extends State<EditPenerimaanScreen> {
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
+
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
@@ -52,44 +78,48 @@ class _EditPenerimaanScreenState extends State<EditPenerimaanScreen> {
   }
 
   Future<void> _submitForm() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
-      final penerimaanUpdated = {
-        'tanggal': _selectedDate,
-        'transaksi': _transaksiController.text.trim(),
-        'pembeli': _pembeliController.text.trim(),
-        'quantity': int.parse(_quantityController.text.trim()),
-        'satuan': _satuanController.text.trim(),
-        'harga': int.parse(_hargaController.text.trim()),
-        'total': int.parse(_quantityController.text.trim()) *
-            int.parse(_hargaController.text.trim()),
-      };
+      final repository = ref.read(penerimaanRepositoryProvider);
 
-      print('Data Penerimaan Diupdate: $penerimaanUpdated');
+      final updatedPenerimaan = widget.penerimaan.copyWith(
+        tanggal: _selectedDate!.toIso8601String(),
+        transaksi: _transaksiController.text.trim(),
+        pembeli: _pembeliController.text.trim(),
+        kuantitas: num.tryParse(_quantityController.text) ?? 0,
+        satuan: _satuanController.text.trim(),
+        hargaSatuan: num.tryParse(_hargaController.text) ?? 0,
+        total:
+            (num.tryParse(_quantityController.text) ?? 0) *
+            (num.tryParse(_hargaController.text) ?? 0),
+        keterangan: _keteranganController.text.trim().isNotEmpty
+            ? _keteranganController.text.trim()
+            : null,
+      );
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Penerimaan berhasil diupdate'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pop(context);
-      }
+      await repository.updatePenerimaan(updatedPenerimaan);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Penerimaan berhasil diperbarui'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal mengupdate penerimaan: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal memperbarui: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -105,6 +135,7 @@ class _EditPenerimaanScreenState extends State<EditPenerimaanScreen> {
     _quantityController.dispose();
     _satuanController.dispose();
     _hargaController.dispose();
+    _keteranganController.dispose();
     super.dispose();
   }
 
@@ -116,7 +147,7 @@ class _EditPenerimaanScreenState extends State<EditPenerimaanScreen> {
         centerTitle: true,
         leading: IconButton(
           icon: const HeroIcon(HeroIcons.arrowLeft),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
       body: SingleChildScrollView(
@@ -126,7 +157,7 @@ class _EditPenerimaanScreenState extends State<EditPenerimaanScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Tanggal
+              // Tanggal Field
               TextFormField(
                 controller: _tanggalController,
                 decoration: InputDecoration(
@@ -140,11 +171,11 @@ class _EditPenerimaanScreenState extends State<EditPenerimaanScreen> {
                 ),
                 readOnly: true,
                 validator: (value) =>
-                    value!.isEmpty ? 'Pilih tanggal penerimaan' : null,
+                    value?.isEmpty ?? true ? 'Harap pilih tanggal' : null,
               ),
               const SizedBox(height: 16),
 
-              // Nama Transaksi
+              // Nama Transaksi Field
               TextFormField(
                 controller: _transaksiController,
                 decoration: const InputDecoration(
@@ -153,11 +184,11 @@ class _EditPenerimaanScreenState extends State<EditPenerimaanScreen> {
                   prefixIcon: HeroIcon(HeroIcons.shoppingBag),
                 ),
                 validator: (value) =>
-                    value!.isEmpty ? 'Masukkan nama transaksi' : null,
+                    value?.isEmpty ?? true ? 'Harap isi nama transaksi' : null,
               ),
               const SizedBox(height: 16),
 
-              // Nama Pembeli
+              // Nama Pembeli Field
               TextFormField(
                 controller: _pembeliController,
                 decoration: const InputDecoration(
@@ -166,11 +197,11 @@ class _EditPenerimaanScreenState extends State<EditPenerimaanScreen> {
                   prefixIcon: HeroIcon(HeroIcons.user),
                 ),
                 validator: (value) =>
-                    value!.isEmpty ? 'Masukkan nama pembeli' : null,
+                    value?.isEmpty ?? true ? 'Harap isi nama pembeli' : null,
               ),
               const SizedBox(height: 16),
 
-              // Quantity dan Satuan
+              // Quantity and Satuan Row
               Row(
                 children: [
                   Expanded(
@@ -184,7 +215,8 @@ class _EditPenerimaanScreenState extends State<EditPenerimaanScreen> {
                       ),
                       keyboardType: TextInputType.number,
                       validator: (value) =>
-                          value!.isEmpty ? 'Masukkan quantity' : null,
+                          value?.isEmpty ?? true ? 'Harap isi quantity' : null,
+                      onChanged: (_) => setState(() {}),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -198,14 +230,14 @@ class _EditPenerimaanScreenState extends State<EditPenerimaanScreen> {
                         prefixIcon: HeroIcon(HeroIcons.scale),
                       ),
                       validator: (value) =>
-                          value!.isEmpty ? 'Masukkan satuan' : null,
+                          value?.isEmpty ?? true ? 'Harap isi satuan' : null,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
 
-              // Harga
+              // Harga Satuan Field
               TextFormField(
                 controller: _hargaController,
                 decoration: const InputDecoration(
@@ -216,9 +248,22 @@ class _EditPenerimaanScreenState extends State<EditPenerimaanScreen> {
                 ),
                 keyboardType: TextInputType.number,
                 validator: (value) =>
-                    value!.isEmpty ? 'Masukkan harga satuan' : null,
+                    value?.isEmpty ?? true ? 'Harap isi harga satuan' : null,
+                onChanged: (_) => setState(() {}),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
+
+              // Keterangan Field
+              TextFormField(
+                controller: _keteranganController,
+                decoration: const InputDecoration(
+                  labelText: 'Keterangan (Opsional)',
+                  border: OutlineInputBorder(),
+                  prefixIcon: HeroIcon(HeroIcons.documentText),
+                ),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 16),
 
               // Total Preview
               Container(
@@ -285,17 +330,9 @@ class _EditPenerimaanScreenState extends State<EditPenerimaanScreen> {
   }
 
   String _calculateTotal() {
-    try {
-      if (_quantityController.text.isNotEmpty &&
-          _hargaController.text.isNotEmpty) {
-        final quantity = int.parse(_quantityController.text);
-        final harga = int.parse(_hargaController.text);
-        final total = quantity * harga;
-        return 'Rp ${NumberFormat('#,###').format(total)}';
-      }
-    } catch (e) {
-      return 'Rp 0';
-    }
-    return 'Rp 0';
+    final quantity = num.tryParse(_quantityController.text) ?? 0;
+    final harga = num.tryParse(_hargaController.text) ?? 0;
+    final total = quantity * harga;
+    return 'Rp ${NumberFormat('#,###').format(total)}';
   }
 }

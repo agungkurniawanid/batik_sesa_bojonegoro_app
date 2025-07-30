@@ -1,56 +1,66 @@
+import 'package:batik_sesa_bojonegoro_app/core/model/penerimaan_model.dart';
+import 'package:batik_sesa_bojonegoro_app/core/provider/penerimaan_provider.dart';
 import 'package:batik_sesa_bojonegoro_app/core/routes/app_routes.dart';
 import 'package:batik_sesa_bojonegoro_app/screens/dashboard/add_penerimaan_screens.dart';
+import 'package:batik_sesa_bojonegoro_app/screens/dashboard/detail_penerimaan_screens.dart';
 import 'package:batik_sesa_bojonegoro_app/screens/dashboard/edit_penerimaan_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:heroicons/heroicons.dart';
 import 'package:intl/intl.dart';
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Dummy data untuk contoh
-    final List<Map<String, dynamic>> penerimaanList = [
-      {
-        'tanggal': DateTime.now().subtract(const Duration(days: 1)),
-        'transaksi': 'Batik Cap',
-        'pembeli': 'Bu Puji',
-        'quantity': 10,
-        'satuan': 'Pcs',
-        'harga': 150000,
-        'total': 1500000,
-      },
-      {
-        'tanggal': DateTime.now().subtract(const Duration(days: 2)),
-        'transaksi': 'Batik Mliwis Ungu',
-        'pembeli': 'Bu Kades',
-        'quantity': 15,
-        'satuan': 'Pcs',
-        'harga': 200000,
-        'total': 3000000,
-      },
-      {
-        'tanggal': DateTime.now().subtract(const Duration(days: 3)),
-        'transaksi': 'Batik Mliwis Coklat',
-        'pembeli': 'Dinkes Bojonegoro',
-        'quantity': 5,
-        'satuan': 'Pcs',
-        'harga': 250000,
-        'total': 1250000,
-      },
-      {
-        'tanggal': DateTime.now().subtract(const Duration(days: 4)),
-        'transaksi': 'Batik Tulis',
-        'pembeli': 'Bapak Sukardi',
-        'quantity': 8,
-        'satuan': 'Pcs',
-        'harga': 180000,
-        'total': 1440000,
-      },
-    ];
+  ConsumerState<ConsumerStatefulWidget> createState() =>
+      _DashboardScreenState();
+}
 
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  @override
+  StatsData _calculateStats(List<PenerimaanModel> penerimaanList) {
+    final now = DateTime.now();
+    final currentMonth = DateTime(now.year, now.month);
+    final lastMonth = DateTime(now.year, now.month - 1);
+    final currentMonthData = penerimaanList.where((p) {
+      final date = DateTime.tryParse(p.tanggal) ?? DateTime.now();
+      return date.year == currentMonth.year && date.month == currentMonth.month;
+    }).toList();
+    final lastMonthData = penerimaanList.where((p) {
+      final date = DateTime.tryParse(p.tanggal) ?? DateTime.now();
+      return date.year == lastMonth.year && date.month == lastMonth.month;
+    }).toList();
+    final currentMonthTotal = currentMonthData.fold<num>(
+      0,
+      (sum, p) => sum + (p.total ?? 0),
+    );
+
+    final lastMonthTotal = lastMonthData.fold<num>(
+      0,
+      (sum, p) => sum + (p.total ?? 0),
+    );
+
+    final monthlyGrowth = lastMonthTotal > 0
+        ? ((currentMonthTotal - lastMonthTotal) / lastMonthTotal * 100).round()
+        : 100;
+    final transactionGrowth = lastMonthData.isNotEmpty
+        ? ((currentMonthData.length - lastMonthData.length) /
+                  lastMonthData.length *
+                  100)
+              .round()
+        : 100;
+
+    return StatsData(
+      totalAmount: currentMonthTotal,
+      transactionCount: currentMonthData.length,
+      monthlyGrowth: monthlyGrowth,
+      transactionGrowth: transactionGrowth,
+    );
+  }
+
+  Widget build(BuildContext context) {
+    final penerimaanAsync = ref.watch(penerimaanStreamProvider);
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
@@ -161,22 +171,76 @@ class DashboardScreen extends ConsumerWidget {
               child: Row(
                 children: [
                   Expanded(
-                    child: _buildStatCard(
-                      title: 'Total Penerimaan',
-                      value: 'Rp 12.450.000',
-                      icon: HeroIcons.currencyDollar,
-                      color: Colors.white,
-                      growth: '12% dari bulan lalu',
+                    child: Consumer(
+                      builder: (context, ref, child) {
+                        final penerimaanAsync = ref.watch(
+                          penerimaanStreamProvider,
+                        );
+                        return penerimaanAsync.when(
+                          loading: () => _buildStatCard(
+                            title: 'Total Penerimaan',
+                            value: 'Loading...',
+                            icon: HeroIcons.currencyDollar,
+                            color: Colors.white,
+                            growth: 'Calculating...',
+                          ),
+                          error: (error, stack) => _buildStatCard(
+                            title: 'Total Penerimaan',
+                            value: 'Error',
+                            icon: HeroIcons.currencyDollar,
+                            color: Colors.white,
+                            growth: 'N/A',
+                          ),
+                          data: (penerimaanList) {
+                            final stats = _calculateStats(penerimaanList);
+                            return _buildStatCard(
+                              title: 'Total Penerimaan',
+                              value:
+                                  'Rp ${NumberFormat('#,###').format(stats.totalAmount)}',
+                              icon: HeroIcons.currencyDollar,
+                              color: Colors.white,
+                              growth: '${stats.monthlyGrowth}% dari bulan lalu',
+                            );
+                          },
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildStatCard(
-                      title: 'Transaksi',
-                      value: '24',
-                      icon: HeroIcons.shoppingBag,
-                      color: Colors.white,
-                      growth: '5% dari bulan lalu',
+                    child: Consumer(
+                      builder: (context, ref, child) {
+                        final penerimaanAsync = ref.watch(
+                          penerimaanStreamProvider,
+                        );
+                        return penerimaanAsync.when(
+                          loading: () => _buildStatCard(
+                            title: 'Total Transaksi',
+                            value: 'Loading...',
+                            icon: HeroIcons.shoppingBag,
+                            color: Colors.white,
+                            growth: 'Calculating...',
+                          ),
+                          error: (error, stack) => _buildStatCard(
+                            title: 'Total Transaksi',
+                            value: 'Error',
+                            icon: HeroIcons.shoppingBag,
+                            color: Colors.white,
+                            growth: 'N/A',
+                          ),
+                          data: (penerimaanList) {
+                            final stats = _calculateStats(penerimaanList);
+                            return _buildStatCard(
+                              title: 'Total Transaksi',
+                              value: '${stats.transactionCount}',
+                              icon: HeroIcons.shoppingBag,
+                              color: Colors.white,
+                              growth:
+                                  '${stats.transactionGrowth}% dari bulan lalu',
+                            );
+                          },
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -257,54 +321,244 @@ class DashboardScreen extends ConsumerWidget {
             ),
 
             const SizedBox(height: 16),
-
-            // Penerimaan Terakhir Section
-            Container(
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+            // Bagian penerimaanAsync.when yang diperbaiki
+            penerimaanAsync.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.all(16),
+                child: Center(child: CircularProgressIndicator()),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Penerimaan Terakhir',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {},
-                        child: const Text(
-                          'Lihat Semua',
-                          style: TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
+              error: (error, stack) {
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  ...penerimaanList.map((penerimaan) {
-                    return _buildPenerimaanCard(penerimaan, context);
-                  }).toList(),
-                ],
-              ),
+                  child: Column(
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: Colors.red,
+                        size: 48,
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Gagal Memuat Data',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.red,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          error.toString(),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.grey),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () =>
+                            ref.invalidate(penerimaanStreamProvider),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text('Coba Lagi'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              data: (penerimaanList) {
+                // Handle empty data state lebih aman
+                if (penerimaanList.isEmpty ||
+                    penerimaanList.every((e) => e.id.isEmpty)) {
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Penerimaan Terakhir',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 24),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.receipt_long,
+                                size: 100,
+                                color: Colors.grey[300],
+                              ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'Belum Ada Data Penerimaan',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 24),
+                                child: Text(
+                                  'Mulai dengan menambahkan data penerimaan baru',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const AddPenerimaanScreen(),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blue,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 12,
+                                  ),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.add,
+                                      size: 18,
+                                      color: Colors.white,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Tambah Penerimaan',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Color(0xFFFFFFFF),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                // Filter data yang valid
+                final validPenerimaan = penerimaanList
+                    .where((e) => e.id.isNotEmpty)
+                    .toList();
+                if (validPenerimaan.isEmpty) {
+                  return const SizedBox.shrink(); // Fallback jika semua data tidak valid
+                }
+
+                final lastPenerimaan = validPenerimaan.take(10).toList();
+
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Penerimaan Terakhir',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const DetailPenerimaanScreen(),
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              'Lihat Semua',
+                              style: TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      ...lastPenerimaan.map((penerimaan) {
+                        return _buildPenerimaanCard(penerimaan, context, ref);
+                      }).toList(),
+                    ],
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 20),
           ],
@@ -328,6 +582,8 @@ class DashboardScreen extends ConsumerWidget {
     required Color color,
     required String growth,
   }) {
+    final isPositive = !growth.contains('-') && growth != '0%';
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -357,7 +613,7 @@ class DashboardScreen extends ConsumerWidget {
               const Spacer(),
               Text(
                 title,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 12,
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -376,18 +632,26 @@ class DashboardScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Container(
-            padding: EdgeInsets.all(5),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.arrow_upward, color: Colors.green, size: 16),
+                Icon(
+                  isPositive ? Icons.arrow_upward : Icons.arrow_downward,
+                  color: isPositive ? Colors.green : Colors.red,
+                  size: 16,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   growth,
-                  style: const TextStyle(fontSize: 12, color: Colors.green),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isPositive ? Colors.green : Colors.red,
+                  ),
                 ),
               ],
             ),
@@ -433,11 +697,13 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildPenerimaanCard(
-    Map<String, dynamic> penerimaan,
+    PenerimaanModel penerimaan,
     BuildContext context,
+    WidgetRef ref,
   ) {
     final dateFormat = DateFormat('dd MMM yyyy');
     final currencyFormat = NumberFormat('#,###');
+    final tanggal = DateTime.tryParse(penerimaan.tanggal) ?? DateTime.now();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -479,7 +745,7 @@ class DashboardScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      penerimaan['transaksi'],
+                      penerimaan.transaksi,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -488,7 +754,7 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      penerimaan['pembeli'],
+                      penerimaan.pembeli,
                       style: const TextStyle(
                         fontSize: 12,
                         color: Colors.black54,
@@ -531,7 +797,7 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                   ),
                 ],
-                onSelected: (value) {
+                onSelected: (value) async {
                   if (value == 'detail') {
                     _showDetailBottomSheet(context, penerimaan);
                   } else if (value == 'edit') {
@@ -543,7 +809,7 @@ class DashboardScreen extends ConsumerWidget {
                       ),
                     );
                   } else if (value == 'delete') {
-                    _showDeleteConfirmation(context, penerimaan);
+                    await _showDeleteConfirmation(context, penerimaan, ref);
                   }
                 },
               ),
@@ -557,14 +823,14 @@ class DashboardScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Rp ${currencyFormat.format(penerimaan['harga'])}',
+                'Rp ${currencyFormat.format(penerimaan.hargaSatuan)}',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),
               ),
               Text(
-                '${penerimaan['quantity']} ${penerimaan['satuan']}',
+                '${penerimaan.kuantitas} ${penerimaan.satuan}',
                 style: const TextStyle(fontSize: 13, color: Colors.black54),
               ),
             ],
@@ -575,14 +841,14 @@ class DashboardScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Total: Rp ${currencyFormat.format(penerimaan['total'])}',
+                'Total: Rp ${currencyFormat.format(penerimaan.total)}',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),
               ),
               Text(
-                dateFormat.format(penerimaan['tanggal']),
+                dateFormat.format(tanggal),
                 style: const TextStyle(fontSize: 12, color: Colors.black45),
               ),
             ],
@@ -594,10 +860,11 @@ class DashboardScreen extends ConsumerWidget {
 
   void _showDetailBottomSheet(
     BuildContext context,
-    Map<String, dynamic> penerimaan,
+    PenerimaanModel penerimaan,
   ) {
     final dateFormat = DateFormat('dd MMMM yyyy');
     final currencyFormat = NumberFormat('#,###');
+    final tanggal = DateTime.tryParse(penerimaan.tanggal) ?? DateTime.now();
 
     showModalBottomSheet(
       context: context,
@@ -624,24 +891,23 @@ class DashboardScreen extends ConsumerWidget {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
-              _buildDetailRow(
-                'Tanggal',
-                dateFormat.format(penerimaan['tanggal']),
-              ),
-              _buildDetailRow('Transaksi', penerimaan['transaksi']),
-              _buildDetailRow('Pembeli', penerimaan['pembeli']),
+              _buildDetailRow('Tanggal', dateFormat.format(tanggal)),
+              _buildDetailRow('Transaksi', penerimaan.transaksi),
+              _buildDetailRow('Pembeli', penerimaan.pembeli),
               _buildDetailRow(
                 'Quantity',
-                '${penerimaan['quantity']} ${penerimaan['satuan']}',
+                '${penerimaan.kuantitas} ${penerimaan.satuan}',
               ),
               _buildDetailRow(
                 'Harga Satuan',
-                'Rp ${currencyFormat.format(penerimaan['harga'])}',
+                'Rp ${currencyFormat.format(penerimaan.hargaSatuan)}',
               ),
+              if (penerimaan.keterangan?.isNotEmpty ?? false)
+                _buildDetailRow('Keterangan', penerimaan.keterangan!),
               const Divider(height: 30),
               _buildDetailRow(
                 'Total',
-                'Rp ${currencyFormat.format(penerimaan['total'])}',
+                'Rp ${currencyFormat.format(penerimaan.total)}',
                 isTotal: true,
               ),
               const SizedBox(height: 20),
@@ -672,39 +938,54 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  void _showDeleteConfirmation(
+  Future<void> _showDeleteConfirmation(
     BuildContext context,
-    Map<String, dynamic> penerimaan,
-  ) {
-    showDialog(
+    PenerimaanModel penerimaan,
+    WidgetRef ref,
+  ) async {
+    final repository = ref.read(penerimaanRepositoryProvider);
+
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Konfirmasi Hapus'),
         content: Text(
-          'Apakah Anda yakin ingin menghapus penerimaan ${penerimaan['transaksi']}?',
+          'Apakah Anda yakin ingin menghapus penerimaan ${penerimaan.transaksi}?',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Batal'),
           ),
           TextButton(
-            onPressed: () {
-              // Add your delete logic here
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Penerimaan ${penerimaan['transaksi']} dihapus',
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            },
+            onPressed: () => Navigator.pop(context, true),
             child: const Text('Hapus', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
+
+    if (confirmed == true) {
+      try {
+        await repository.deletePenerimaan(penerimaan.id);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Penerimaan ${penerimaan.transaksi} dihapus'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Gagal menghapus: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
   }
 }

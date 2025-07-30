@@ -11,8 +11,9 @@ import 'package:batik_sesa_bojonegoro_app/screens/karyawan/karyawan_screens.dart
 class MainNavigation extends ConsumerWidget {
   MainNavigation({super.key});
 
-  final PersistentTabController _controller =
-      PersistentTabController(initialIndex: 0);
+  final PersistentTabController _controller = PersistentTabController(
+    initialIndex: 0,
+  );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
