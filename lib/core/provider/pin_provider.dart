@@ -28,51 +28,25 @@ class PinState {
 
 class PinNotifier extends StateNotifier<PinState> {
   PinNotifier()
-    : super(
-        PinState(
-          pin: '123456', // Default PIN
-          isPinEnabled: false,
-          isFirstTime: true,
-        ),
-      ) {
-    loadSettings();
-  }
+    : super(PinState(pin: '123456', isPinEnabled: false, isFirstTime: true));
 
   Future<void> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    final isFirstTime = prefs.getBool('isFirstTime') ?? true;
-
     state = state.copyWith(
       pin: prefs.getString('pin') ?? '123456',
       isPinEnabled: prefs.getBool('isPinEnabled') ?? false,
-      isFirstTime: isFirstTime,
+      isFirstTime: prefs.getBool('isFirstTime') ?? true,
     );
+  }
 
-    // Jika first time, set PIN enabled dan update status
-    if (isFirstTime) {
-      await prefs.setBool('isFirstTime', false);
-      await prefs.setBool('isPinEnabled', true);
-      state = state.copyWith(isFirstTime: false, isPinEnabled: true);
-    }
+  bool verifyPin(String enteredPin) {
+    return enteredPin == state.pin;
   }
 
   Future<void> updatePin(String newPin) async {
-    if (newPin.length != 6) {
-      throw Exception('PIN harus 6 digit');
-    }
-
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('pin', newPin);
     state = state.copyWith(pin: newPin);
-  }
-
-  Future<void> resetPin({bool? keepEnabledStatus}) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('pin', '123456');
-    final currentStatus = keepEnabledStatus ?? state.isPinEnabled;
-
-    await prefs.setBool('isPinEnabled', currentStatus);
-    state = state.copyWith(pin: '123456', isPinEnabled: currentStatus);
   }
 
   Future<void> togglePinEnabled(bool enabled, BuildContext context) async {
@@ -84,19 +58,20 @@ class PinNotifier extends StateNotifier<PinState> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            enabled ? 'PIN telah diaktifkan' : 'PIN telah dinonaktifkan',
+            enabled ? 'PIN diaktifkan' : 'PIN dinonaktifkan',
             style: const TextStyle(color: Colors.white),
           ),
           backgroundColor: enabled ? Colors.green : Colors.red,
-          duration: const Duration(seconds: 2),
         ),
       );
     }
   }
 
-  Future<void> setFirstTime(bool isFirstTime) async {
+  Future<void> resetPin({bool? keepEnabledStatus}) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isFirstTime', isFirstTime);
-    state = state.copyWith(isFirstTime: isFirstTime);
+    await prefs.setString('pin', '123456');
+    final currentStatus = keepEnabledStatus ?? state.isPinEnabled;
+
+    state = state.copyWith(pin: '123456', isPinEnabled: currentStatus);
   }
 }

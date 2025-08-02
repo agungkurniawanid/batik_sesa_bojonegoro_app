@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:heroicons/heroicons.dart';
-import 'package:batik_sesa_bojonegoro_app/core/routes/app_routes.dart';
 
 class PinScreen extends ConsumerWidget {
   const PinScreen({super.key});
@@ -114,24 +113,17 @@ class _PinInputFieldState extends ConsumerState<PinInputField> {
   Future<void> _verifyPin() async {
     setState(() => isLoading = true);
 
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    final pinState = ref.read(pinProvider);
     final enteredPin = _pin.join();
+    final isValid = ref.read(pinProvider.notifier).verifyPin(enteredPin);
 
-    if (enteredPin == pinState.pin) {
-      await Future.delayed(const Duration(milliseconds: 200));
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (_, __, ___) => MainNavigation(),
-            transitionsBuilder: (_, a, __, c) =>
-                FadeTransition(opacity: a, child: c),
-            transitionDuration: const Duration(milliseconds: 500),
-          ),
-        );
-      }
+    await Future.delayed(const Duration(milliseconds: 500)); // For UX
+
+    if (!mounted) return;
+
+    if (isValid) {
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => MainNavigation()));
     } else {
       HapticFeedback.heavyImpact();
       setState(() {
@@ -139,6 +131,7 @@ class _PinInputFieldState extends ConsumerState<PinInputField> {
         _pin.clear();
       });
     }
+
     setState(() => isLoading = false);
   }
 
