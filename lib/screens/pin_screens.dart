@@ -1,4 +1,7 @@
+import 'package:batik_sesa_bojonegoro_app/core/provider/pin_provider.dart';
+import 'package:batik_sesa_bojonegoro_app/widgets/navbottom.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:heroicons/heroicons.dart';
 import 'package:batik_sesa_bojonegoro_app/core/routes/app_routes.dart';
@@ -92,11 +95,14 @@ class PinInputField extends ConsumerStatefulWidget {
 
 class _PinInputFieldState extends ConsumerState<PinInputField> {
   final List<String> _pin = [];
+  bool isError = false;
+  bool isLoading = false;
 
   void _addDigit(String digit) {
-    if (_pin.length < 6) {
+    if (_pin.length < 6 && !isLoading) {
       setState(() {
         _pin.add(digit);
+        isError = false;
       });
     }
 
@@ -105,51 +111,44 @@ class _PinInputFieldState extends ConsumerState<PinInputField> {
     }
   }
 
-  void _removeDigit() {
-    if (_pin.isNotEmpty) {
+  Future<void> _verifyPin() async {
+    setState(() => isLoading = true);
+
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    final pinState = ref.read(pinProvider);
+    final enteredPin = _pin.join();
+
+    if (enteredPin == pinState.pin) {
+      await Future.delayed(const Duration(milliseconds: 200));
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => MainNavigation(),
+            transitionsBuilder: (_, a, __, c) =>
+                FadeTransition(opacity: a, child: c),
+            transitionDuration: const Duration(milliseconds: 500),
+          ),
+        );
+      }
+    } else {
+      HapticFeedback.heavyImpact();
       setState(() {
-        _pin.removeLast();
+        isError = true;
+        _pin.clear();
       });
     }
+    setState(() => isLoading = false);
   }
 
-  void _verifyPin() {
-    // Show loading indicator
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Center(
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.blueAccent),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Memverifikasi PIN...',
-                style: TextStyle(
-                  color: Colors.grey[700],
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    // In a real app, you would verify the PIN here
-    Future.delayed(const Duration(milliseconds: 800), () {
-      Navigator.pop(context); // Remove loading indicator
-      Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
-    });
+  void _removeDigit() {
+    if (_pin.isNotEmpty && !isLoading) {
+      setState(() {
+        _pin.removeLast();
+        isError = false;
+      });
+    }
   }
 
   @override
@@ -166,17 +165,26 @@ class _PinInputFieldState extends ConsumerState<PinInputField> {
               margin: const EdgeInsets.symmetric(horizontal: 10),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: index < _pin.length 
-                  ? Colors.blueAccent 
-                  : Colors.grey[300],
-                border: index < _pin.length 
-                  ? null 
-                  : Border.all(color: Colors.grey[400]!, width: 1),
+                color: index < _pin.length
+                    ? isError
+                          ? Colors.red
+                          : Colors.blueAccent
+                    : Colors.grey[300],
+                border: index < _pin.length
+                    ? null
+                    : Border.all(color: Colors.grey[400]!, width: 1),
               ),
             );
           }),
         ),
-        const SizedBox(height: 60),
+        if (isError) ...[
+          const SizedBox(height: 16),
+          const Text(
+            'PIN salah, coba lagi',
+            style: TextStyle(color: Colors.red, fontSize: 14),
+          ),
+        ],
+        const SizedBox(height: 40),
         NumericKeyboard(
           onDigitPressed: _addDigit,
           onBackspacePressed: _removeDigit,
@@ -213,15 +221,9 @@ class NumericKeyboard extends StatelessWidget {
             onPressed: () => onDigitPressed(i.toString()),
           ),
         const SizedBox.shrink(),
-        _buildKey(
-          text: '0',
-          onPressed: () => onDigitPressed('0'),
-        ),
+        _buildKey(text: '0', onPressed: () => onDigitPressed('0')),
         _buildIconKey(
-          icon: const HeroIcon(
-            HeroIcons.backspace,
-            size: 24,
-          ),
+          icon: const HeroIcon(HeroIcons.backspace, size: 24),
           onPressed: onBackspacePressed,
         ),
       ],
@@ -263,7 +265,10 @@ class NumericKeyboard extends StatelessWidget {
     );
   }
 
-  Widget _buildIconKey({required HeroIcon icon, required VoidCallback onPressed}) {
+  Widget _buildIconKey({
+    required HeroIcon icon,
+    required VoidCallback onPressed,
+  }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(

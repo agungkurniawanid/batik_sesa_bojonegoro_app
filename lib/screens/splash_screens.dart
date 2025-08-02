@@ -1,3 +1,6 @@
+import 'package:batik_sesa_bojonegoro_app/core/provider/pin_provider.dart';
+import 'package:batik_sesa_bojonegoro_app/screens/pin_screens.dart';
+import 'package:batik_sesa_bojonegoro_app/widgets/navbottom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:batik_sesa_bojonegoro_app/core/routes/app_routes.dart';
@@ -10,7 +13,7 @@ class SplashScreen extends ConsumerStatefulWidget {
   ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends ConsumerState<SplashScreen> 
+class _SplashScreenState extends ConsumerState<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
@@ -18,23 +21,37 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   void initState() {
     super.initState();
-    
+
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
-    
+
     _fadeAnimation = Tween<double>(begin: 0.4, end: 1.0).animate(_controller);
-    
-    Future.delayed(const Duration(seconds: 5), () {
-      Navigator.pushReplacementNamed(context, AppRoutes.pin);
-    });
+
+    // Panggil fungsi inisialisasi
+    _initializeApp();
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+  Future<void> _initializeApp() async {
+    await ref.read(pinProvider.notifier).loadSettings();
+    _navigateToAppropriateScreen();
+  }
+
+  Future<void> _navigateToAppropriateScreen() async {
+    final pinState = ref.read(pinProvider);
+
+    if (!mounted) return;
+
+    if (pinState.isPinEnabled) {
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const PinScreen()));
+    } else {
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => MainNavigation()));
+    }
   }
 
   @override
@@ -48,10 +65,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFF1976D2),
-                  Color(0xFF0D47A1),
-                ],
+                colors: [Color(0xFF1976D2), Color(0xFF0D47A1)],
               ),
             ),
           ),
@@ -71,10 +85,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 Text(
                   'Bojonegoro, Jawa Timur',
                   style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 24,
-                      ),
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 24,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 LoadingAnimationWidget.progressiveDots(
@@ -86,10 +100,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   opacity: _fadeAnimation,
                   child: Text(
                     'Memuat Aplikasi...',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(color: Colors.white, fontSize: 16),
                   ),
                 ),
               ],

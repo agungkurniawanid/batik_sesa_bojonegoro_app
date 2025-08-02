@@ -43,6 +43,8 @@ dependencies:
   firebase_database: ^11.3.10
   url_launcher: ^6.3.2
   month_picker_dialog: ^6.3.0
+  shared_preferences: ^2.5.3
+  iconsax: ^0.0.8
 
 dev_dependencies:
   flutter_test:
