@@ -20,7 +20,7 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Batik Sesa Bojonegoro',
+      title: 'Batik Sesa App',
       onGenerateRoute: AppRoutes.generateRoute,
       home: const SplashScreen(),
     );

@@ -82,42 +82,68 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 colors: [Color(0xFF1976D2), Color(0xFF0D47A1)],
               ),
             ),
-          ),
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'BATIK SESA',
-                  style: TextStyle(
-                    fontFamily: 'Sriwedari',
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Circular logo container
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    width: 150,
+                    height: 150,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 8,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/img/logo-app.png',
+                        fit: BoxFit.contain,
+                        width: 120,
+                        height: 120,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'BATIK SESA',
+                    style: TextStyle(
+                      fontFamily: 'Sriwedari',
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 56,
+                    ),
+                  ),
+                  Text(
+                    'Bojonegoro, Jawa Timur',
+                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 24,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  LoadingAnimationWidget.progressiveDots(
                     color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 56,
+                    size: 50,
                   ),
-                ),
-                Text(
-                  'Bojonegoro, Jawa Timur',
-                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 24,
+                  const SizedBox(height: 10),
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Text(
+                      'Memuat Aplikasi...',
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                LoadingAnimationWidget.progressiveDots(
-                  color: Colors.white,
-                  size: 50,
-                ),
-                const SizedBox(height: 10),
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: Text(
-                    'Memuat Aplikasi...',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
