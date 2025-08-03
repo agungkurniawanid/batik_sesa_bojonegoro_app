@@ -1,7 +1,7 @@
 import 'package:batik_sesa_bojonegoro_app/core/model/penerimaan_model.dart';
 import 'package:batik_sesa_bojonegoro_app/core/provider/penerimaan_provider.dart';
 import 'package:batik_sesa_bojonegoro_app/core/provider/pin_provider.dart';
-import 'package:batik_sesa_bojonegoro_app/core/routes/app_routes.dart';
+import 'package:batik_sesa_bojonegoro_app/core/provider/tab_controller_provider.dart';
 import 'package:batik_sesa_bojonegoro_app/screens/dashboard/add_penerimaan_screens.dart';
 import 'package:batik_sesa_bojonegoro_app/screens/dashboard/detail_penerimaan_screens.dart';
 import 'package:batik_sesa_bojonegoro_app/screens/dashboard/edit_penerimaan_screen.dart';
@@ -251,6 +251,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             const SizedBox(height: 16),
 
             // Quick Menu Section
+            // Quick Menu Section
             Container(
               padding: const EdgeInsets.all(16),
               margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -284,38 +285,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     physics: const NeverScrollableScrollPhysics(),
                     crossAxisCount: 4,
                     childAspectRatio: 0.9,
-                    children: [
-                      _buildMenuButton(
-                        icon: HeroIcons.cube,
-                        label: 'Bahan Baku',
-                        color: Colors.blue,
-                        onTap: () =>
-                            Navigator.pushNamed(context, AppRoutes.bahanBaku),
-                      ),
-                      _buildMenuButton(
-                        icon: HeroIcons.swatch,
-                        label: 'Daftar Kain',
-                        color: Colors.purple,
-                        onTap: () =>
-                            Navigator.pushNamed(context, AppRoutes.daftarKain),
-                      ),
-                      _buildMenuButton(
-                        icon: HeroIcons.clipboardDocumentList,
-                        label: 'Daftar Keperluan',
-                        color: Colors.orange,
-                        onTap: () => Navigator.pushNamed(
-                          context,
-                          AppRoutes.daftarKeperluan,
-                        ),
-                      ),
-                      _buildMenuButton(
-                        icon: HeroIcons.users,
-                        label: 'Karyawan',
-                        color: Colors.green,
-                        onTap: () =>
-                            Navigator.pushNamed(context, AppRoutes.karyawan),
-                      ),
-                    ],
+                    children: _buildQuickMenuItems(context, ref),
                   ),
                 ],
               ),
@@ -662,6 +632,40 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
+  List<Widget> _buildQuickMenuItems(BuildContext context, WidgetRef ref) {
+    return [
+      _buildMenuButton(
+        icon: HeroIcons.cube,
+        label: 'Bahan Baku',
+        color: Colors.blue,
+        onTap: () => _navigateToScreen(ref, 1),
+      ),
+      _buildMenuButton(
+        icon: HeroIcons.swatch,
+        label: 'Daftar Kain',
+        color: Colors.purple,
+        onTap: () => _navigateToScreen(ref, 2),
+      ),
+      _buildMenuButton(
+        icon: HeroIcons.clipboardDocumentList,
+        label: 'Daftar Keperluan',
+        color: Colors.orange,
+        onTap: () => _navigateToScreen(ref, 3),
+      ),
+      _buildMenuButton(
+        icon: HeroIcons.users,
+        label: 'Karyawan',
+        color: Colors.green,
+        onTap: () => _navigateToScreen(ref, 4),
+      ),
+    ];
+  }
+
+  void _navigateToScreen(WidgetRef ref, int index) {
+    final controller = ref.read(tabControllerProvider);
+    controller.jumpToTab(index);
+  }
+
   Widget _buildMenuButton({
     required HeroIcons icon,
     required String label,
@@ -686,7 +690,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           Text(
             label,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 12,
               color: Colors.black87,
               fontWeight: FontWeight.w500,
