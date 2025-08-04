@@ -197,6 +197,88 @@ class DaftarKeperluanScreen extends ConsumerWidget {
     );
   }
 
+  void _showAllItemsPopup(
+    BuildContext context,
+    String category,
+    String type,
+    List<dynamic> items,
+  ) {
+    List filteredItems = items
+        .where((item) => item.kategori == category)
+        .toList();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          insetPadding: const EdgeInsets.all(20),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            constraints: const BoxConstraints(maxHeight: 600),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      category,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const HeroIcon(HeroIcons.xMark),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: filteredItems.isEmpty
+                      ? Center(
+                          child: Text(
+                            'Tidak ada data untuk kategori ini',
+                            style: TextStyle(color: Colors.grey.shade600),
+                          ),
+                        )
+                      : ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: filteredItems.length,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            if (type == 'BahanBakuTradisional') {
+                              final item =
+                                  filteredItems[index] as BahanBakuTradisional;
+                              return _buildBahanBakuTradisionalItem(
+                                context,
+                                item,
+                              );
+                            } else {
+                              final item =
+                                  filteredItems[index] as PewarnaBatikModern;
+                              return _buildPewarnaBatikModernItem(
+                                context,
+                                item,
+                              );
+                            }
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildCategorySection(
     BuildContext context,
     String category,
@@ -209,9 +291,13 @@ class DaftarKeperluanScreen extends ConsumerWidget {
       data: (items) {
         List filteredItems = [];
         if (type == 'BahanBakuTradisional') {
-          filteredItems = items.where((item) => item.kategori == category).toList();
+          filteredItems = items
+              .where((item) => item.kategori == category)
+              .toList();
         } else {
-          filteredItems = items.where((item) => item.kategori == category).toList();
+          filteredItems = items
+              .where((item) => item.kategori == category)
+              .toList();
         }
 
         return Column(
@@ -229,7 +315,9 @@ class DaftarKeperluanScreen extends ConsumerWidget {
                   ),
                 ),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    _showAllItemsPopup(context, category, type, items);
+                  },
                   child: const Text(
                     'Lihat Semua',
                     style: TextStyle(color: Colors.blue),
@@ -243,11 +331,15 @@ class DaftarKeperluanScreen extends ConsumerWidget {
                 : ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: filteredItems.length > 3 ? 3 : filteredItems.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 8),
+                    itemCount: filteredItems.length > 3
+                        ? 3
+                        : filteredItems.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       if (type == 'BahanBakuTradisional') {
-                        final item = filteredItems[index] as BahanBakuTradisional;
+                        final item =
+                            filteredItems[index] as BahanBakuTradisional;
                         return _buildBahanBakuTradisionalItem(context, item);
                       } else {
                         final item = filteredItems[index] as PewarnaBatikModern;
@@ -267,10 +359,7 @@ class DaftarKeperluanScreen extends ConsumerWidget {
       color: Colors.blue[50],
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: Colors.blue[100]!,
-          width: 1,
-        ),
+        side: BorderSide(color: Colors.blue[100]!, width: 1),
       ),
       elevation: 0,
       child: Padding(
@@ -305,10 +394,7 @@ class DaftarKeperluanScreen extends ConsumerWidget {
                   const SizedBox(height: 4),
                   Text(
                     'Data untuk kategori $category akan muncul di sini',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.blue[700],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.blue[700]),
                   ),
                 ],
               ),
@@ -323,8 +409,10 @@ class DaftarKeperluanScreen extends ConsumerWidget {
     BuildContext context,
     BahanBakuTradisional item,
   ) {
-    final repository = ProviderScope.containerOf(context).read(keperluanRepositoryProvider);
-    
+    final repository = ProviderScope.containerOf(
+      context,
+    ).read(keperluanRepositoryProvider);
+
     // Format harga dengan pemisah ribuan
     final formattedHarga = NumberFormat.currency(
       locale: 'id_ID',
@@ -389,11 +477,17 @@ class DaftarKeperluanScreen extends ConsumerWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => EditBahanBakuTradisionalScreen(item: item),
+                        builder: (context) =>
+                            EditBahanBakuTradisionalScreen(item: item),
                       ),
                     );
                   } else if (value == 'delete') {
-                    _showDeleteConfirmation(context, item.id, 'BahanBakuTradisional', repository);
+                    _showDeleteConfirmation(
+                      context,
+                      item.id,
+                      'BahanBakuTradisional',
+                      repository,
+                    );
                   }
                 },
               ),
@@ -405,13 +499,15 @@ class DaftarKeperluanScreen extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  const HeroIcon(HeroIcons.currencyDollar, size: 16, color: Colors.green),
+                  const HeroIcon(
+                    HeroIcons.currencyDollar,
+                    size: 16,
+                    color: Colors.green,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     formattedHarga,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.w500),
                   ),
                 ],
               ),
@@ -421,9 +517,7 @@ class DaftarKeperluanScreen extends ConsumerWidget {
                   const SizedBox(width: 4),
                   Text(
                     item.satuan,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.w500),
                   ),
                 ],
               ),
@@ -433,15 +527,16 @@ class DaftarKeperluanScreen extends ConsumerWidget {
           if (item.keterangan.isNotEmpty)
             Row(
               children: [
-                const HeroIcon(HeroIcons.informationCircle, size: 16, color: Colors.grey),
+                const HeroIcon(
+                  HeroIcons.informationCircle,
+                  size: 16,
+                  color: Colors.grey,
+                ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     item.keterangan,
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 14,
-                    ),
+                    style: const TextStyle(color: Colors.grey, fontSize: 14),
                   ),
                 ),
               ],
@@ -455,8 +550,10 @@ class DaftarKeperluanScreen extends ConsumerWidget {
     BuildContext context,
     PewarnaBatikModern item,
   ) {
-    final repository = ProviderScope.containerOf(context).read(keperluanRepositoryProvider);
-    
+    final repository = ProviderScope.containerOf(
+      context,
+    ).read(keperluanRepositoryProvider);
+
     // Format semua harga dengan pemisah ribuan
     final formatHarga = (int harga) => NumberFormat.currency(
       locale: 'id_ID',
@@ -512,7 +609,7 @@ class DaftarKeperluanScreen extends ConsumerWidget {
                         HeroIcon(HeroIcons.trash, size: 18, color: Colors.red),
                         SizedBox(width: 8),
                         Text('Hapus', style: TextStyle(color: Colors.red)),
-                      ], 
+                      ],
                     ),
                   ),
                 ],
@@ -521,11 +618,17 @@ class DaftarKeperluanScreen extends ConsumerWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => EditPewarnaBatikModernScreen(item: item),
+                        builder: (context) =>
+                            EditPewarnaBatikModernScreen(item: item),
                       ),
                     );
                   } else if (value == 'delete') {
-                    _showDeleteConfirmation(context, item.id, 'PewarnaBatikModern', repository);
+                    _showDeleteConfirmation(
+                      context,
+                      item.id,
+                      'PewarnaBatikModern',
+                      repository,
+                    );
                   }
                 },
               ),
@@ -579,14 +682,13 @@ class DaftarKeperluanScreen extends ConsumerWidget {
         const SizedBox(width: 8),
         Row(
           children: [
-            const HeroIcon(HeroIcons.currencyDollar, size: 16, color: Colors.green),
-            const SizedBox(width: 4),
-            Text(
-              harga,
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-              ),
+            const HeroIcon(
+              HeroIcons.currencyDollar,
+              size: 16,
+              color: Colors.green,
             ),
+            const SizedBox(width: 4),
+            Text(harga, style: const TextStyle(fontWeight: FontWeight.w500)),
           ],
         ),
       ],
